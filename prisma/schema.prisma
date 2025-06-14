@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Transaction {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  description      String
+  value            Int
+  kind             String
+  wallet_id        String    @db.ObjectId
+  wallet           Wallet    @relation(fields: [wallet_id], references: [id])
+  transaction_date DateTime
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  discarded_at     DateTime?
+}
+
+model Wallet {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  transactions Transaction[]
+  user_wallets UserWallet[]
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  discarded_at DateTime?
+}
+
+model UserWallet {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  user_id      String    @db.ObjectId
+  user         User      @relation(fields: [user_id], references: [id])
+  wallet_id    String    @db.ObjectId
+  wallet       Wallet    @relation(fields: [wallet_id], references: [id])
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  discarded_at DateTime?
+}
+
+model User {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  email        String
+  name         String
+  password     String
+  user_wallets UserWallet[]
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+  discarded_at DateTime?
+}
