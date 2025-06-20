@@ -7,7 +7,7 @@ import { UserService } from '../user/user.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor( private usersService: UserService, configService: ConfigService) {
+  constructor( private userService: UserService, configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -16,7 +16,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayloadParams) {
-    const user = await this.usersService.findOne({email: payload.email});
+    const user = await this.userService.findOne({email: payload.email});
     if (!user) throw new UnauthorizedException({message: 'Usuário não encontrado'});
     
     return user;
