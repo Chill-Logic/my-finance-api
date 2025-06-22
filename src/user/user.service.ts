@@ -14,9 +14,10 @@ export class UserService {
     });
   }
 
-  findOne({ id, email}: { id?: string; email?: string }) {
-    return this.databaseService.user.findFirst({
+  async findOne({ id, email}: { id?: string; email?: string }) {
+    const user = await this.databaseService.user.findFirst({
       where: { id, email }
     });
+    return user;
   }
 }

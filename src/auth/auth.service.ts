@@ -36,7 +36,7 @@ export class AuthService {
   async signin({email, password}: SignInDto) {
     const user = await this.validateUser(email, password);
     return {
-      access_token: this.jwtService.sign(user),
+      token: this.jwtService.sign(user),
     };
   }
 }
