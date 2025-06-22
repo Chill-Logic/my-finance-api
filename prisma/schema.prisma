@@ -23,6 +23,7 @@ model Transaction {
   created_at       DateTime  @default(now())
   updated_at       DateTime  @updatedAt
   discarded_at     DateTime?
+  @@map("transactions")
 }
 
 model Wallet {
@@ -35,6 +36,7 @@ model Wallet {
   created_at   DateTime      @default(now())
   updated_at   DateTime      @updatedAt
   discarded_at DateTime?
+  @@map("wallets")
 }
 
 model UserWallet {
@@ -47,6 +49,7 @@ model UserWallet {
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   discarded_at      DateTime?
+  @@map("user_wallets")
 }
 
 model User {
@@ -61,4 +64,5 @@ model User {
   created_at          DateTime     @default(now())
   updated_at          DateTime     @updatedAt
   discarded_at        DateTime?
+  @@map("users")
 }
