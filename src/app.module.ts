@@ -8,13 +8,19 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerMiddleware } from './middleware/logger.middleware';
+import { TransactionModule } from './transaction/transaction.module';
+import { WalletModule } from './wallet/wallet.module';
+import { UserWalletModule } from './user-wallet/user-wallet.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
     UserModule,
-    DatabaseModule
+    DatabaseModule,
+    TransactionModule,
+    WalletModule,
+    UserWalletModule
   ],
   controllers: [AppController],
   providers: [

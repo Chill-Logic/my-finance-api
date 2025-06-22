@@ -9,14 +9,14 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
-  @Post('signup')
+  @Post('sign-up')
   async signup(@Body() dto: SignUpDto) {
     await this.authService.signup(dto);
     return { message: 'Usuário criado com sucesso' };
   }
 
   @Public()
-  @Post('signin')
+  @Post('sign-in')
   async signin(@Body() dto: SignInDto) {
     return this.authService.signin(dto); 
   }

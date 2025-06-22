@@ -6,7 +6,7 @@ import { User } from '@prisma/client';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get()
+  @Get('me')
   findOne(@Request() req: { user: User }) {
     const { password, ...user_data } = req.user;
     return user_data;
