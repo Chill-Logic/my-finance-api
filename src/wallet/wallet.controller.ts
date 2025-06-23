@@ -1,11 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { CreateWalletDto } from './dto/create-wallet.dto';
 import { UpdateWalletDto } from './dto/update-wallet.dto';
+import { User } from '@prisma/client';
 
 @Controller('wallets')
 export class WalletController {
   constructor(private readonly walletService: WalletService) {}
+
+  @Get('main')
+  async findMain(@Request() req: { user: User }) {
+    console.log(req.user.main_user_wallet_id);
+    return await this.walletService.findOneByUserWalletId(req.user.main_user_wallet_id);
+  }
 
   @Post()
   create(@Body() createWalletDto: CreateWalletDto) {
@@ -19,16 +26,16 @@ export class WalletController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.walletService.findOne(+id);
+    return this.walletService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateWalletDto: UpdateWalletDto) {
-    return this.walletService.update(+id, updateWalletDto);
+    return this.walletService.update(id, updateWalletDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.walletService.remove(+id);
+    return this.walletService.remove(id);
   }
 }
