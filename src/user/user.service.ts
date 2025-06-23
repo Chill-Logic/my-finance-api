@@ -33,10 +33,8 @@ export class UserService {
             name: 'Minha Carteira',
             user_wallets: {
               create: {
-                user_id: current_user.id,
-                users_main_wallet: {
-                  connect: { id: current_user.id }
-                }
+                user: { connect: { id: current_user.id } },
+                users_main_wallet: { connect: { id: current_user.id } }
               }
             }
           }
