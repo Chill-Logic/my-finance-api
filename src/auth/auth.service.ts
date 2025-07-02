@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { SignInDto } from './dto/sign-in.dto';
@@ -14,6 +14,11 @@ export class AuthService {
   ) {}
 
   async signup(dto: SignUpDto) {
+    if (await this.userService.findOne({email: dto.email})) {
+      throw new UnprocessableEntityException({
+        message: 'Email já cadastrado'
+      });
+    }
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     return this.userService.create({
       ...dto,

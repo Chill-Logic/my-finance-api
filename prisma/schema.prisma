@@ -23,6 +23,7 @@ model Transaction {
   created_at       DateTime  @default(now())
   updated_at       DateTime  @updatedAt
   discarded_at     DateTime?
+
   @@map("transactions")
 }
 
@@ -36,6 +37,7 @@ model Wallet {
   created_at   DateTime      @default(now())
   updated_at   DateTime      @updatedAt
   discarded_at DateTime?
+
   @@map("wallets")
 }
 
@@ -49,12 +51,13 @@ model UserWallet {
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   discarded_at      DateTime?
+
   @@map("user_wallets")
 }
 
 model User {
   id                  String       @id @default(auto()) @map("_id") @db.ObjectId
-  email               String
+  email               String       @unique
   name                String
   password            String
   main_user_wallet_id String?      @db.ObjectId
@@ -64,5 +67,6 @@ model User {
   created_at          DateTime     @default(now())
   updated_at          DateTime     @updatedAt
   discarded_at        DateTime?
+
   @@map("users")
 }
