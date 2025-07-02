@@ -10,7 +10,6 @@ export class WalletController {
 
   @Get('main')
   async findMain(@Request() req: { user: User }) {
-    console.log(req.user.main_user_wallet_id);
     return await this.walletService.findOneByUserWalletId(req.user.main_user_wallet_id);
   }
 
