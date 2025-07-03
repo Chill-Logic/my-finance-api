@@ -14,11 +14,6 @@ export class AuthService {
   ) {}
 
   async signup(dto: SignUpDto) {
-    if (await this.userService.findOne({email: dto.email})) {
-      throw new UnprocessableEntityException({
-        message: 'Email já cadastrado'
-      });
-    }
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     return this.userService.create({
       ...dto,

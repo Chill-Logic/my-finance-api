@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { DatabaseService } from '../database/database.service';
 import { After } from '../decorators/after.decorator';
@@ -11,7 +11,12 @@ export class UserService {
   ) {}
   
   @After("createUserWallet")
-  create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto) {
+    if (await this.databaseService.user.findFirst({where: {email: createUserDto.email}})) {
+      throw new ConflictException({
+        message: 'Email já cadastrado'
+      });
+    }
     return this.databaseService.user.create({
       data: createUserDto
     });
