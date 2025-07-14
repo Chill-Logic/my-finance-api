@@ -8,15 +8,15 @@ datasource db {
 }
 
 enum TransactionKind {
-  DEPOSIT
-  WITHDRAW
+  deposit
+  withdraw
 }
 
 model Transaction {
   id               String    @id @default(auto()) @map("_id") @db.ObjectId
   description      String
   value            Int
-  kind             String
+  kind             TransactionKind
   wallet_id        String    @db.ObjectId
   wallet           Wallet    @relation(fields: [wallet_id], references: [id])
   transaction_date DateTime

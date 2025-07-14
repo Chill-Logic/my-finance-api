@@ -27,7 +27,7 @@ export class WalletService {
 
     const { _sum: { value: depositSum } } = await this.databaseService.transaction.aggregate({
       where: {
-        kind: 'DEPOSIT',
+        kind: 'deposit',
         wallet_id: wallet.id
       },
       _sum: { value: true }
@@ -35,7 +35,7 @@ export class WalletService {
 
     const { _sum: { value: withdrawSum } } = await this.databaseService.transaction.aggregate({
       where: {
-        kind: 'WITHDRAW',
+        kind: 'withdraw',
         wallet_id: wallet.id
       },
       _sum: { value: true }

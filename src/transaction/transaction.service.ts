@@ -1,26 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { DatabaseService } from '../database/database.service';
 
 @Injectable()
 export class TransactionService {
+  constructor(
+    private readonly databaseService: DatabaseService
+  ) {}
+
+  
   create(createTransactionDto: CreateTransactionDto) {
-    return 'This action adds a new transaction';
+    return this.databaseService.transaction.create({
+      data: createTransactionDto,
+    });
   }
 
   findAll() {
-    return `This action returns all transaction`;
+    return this.databaseService.transaction.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} transaction`;
+  findOne(id: string) {
+    return this.databaseService.transaction.findUnique({
+      where: { id }
+    });
   }
 
-  update(id: number, updateTransactionDto: UpdateTransactionDto) {
-    return `This action updates a #${id} transaction`;
+  update(id: string, updateTransactionDto: UpdateTransactionDto) {
+    return this.databaseService.transaction.update({
+      where: { id },
+      data: updateTransactionDto,
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} transaction`;
+  remove(id: string) {
+    return this.databaseService.transaction.delete({
+      where: { id },
+    });
   }
 }
