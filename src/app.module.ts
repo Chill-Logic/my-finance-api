@@ -11,12 +11,13 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
 import { TransactionModule } from './transaction/transaction.module';
 import { WalletModule } from './wallet/wallet.module';
 import { UserWalletModule } from './user-wallet/user-wallet.module';
+import { join } from 'path';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: __dirname + '../.env'
+      envFilePath: join(__dirname, '../.env')
     }),
     AuthModule,
     UserModule,
