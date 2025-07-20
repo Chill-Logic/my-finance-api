@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Query } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -13,7 +13,7 @@ export class TransactionController {
   }
 
   @Get()
-  findAll(@Param('wallet_id') wallet_id: string) {
+  findAll(@Query('wallet_id') wallet_id: string) {
     return this.transactionService.findAll(wallet_id);
   }
 
