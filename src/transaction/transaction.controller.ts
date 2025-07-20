@@ -13,8 +13,8 @@ export class TransactionController {
   }
 
   @Get()
-  findAll() {
-    return this.transactionService.findAll();
+  findAll(@Param('wallet_id') wallet_id: string) {
+    return this.transactionService.findAll(wallet_id);
   }
 
   @Get(':id')

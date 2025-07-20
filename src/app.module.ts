@@ -14,7 +14,10 @@ import { UserWalletModule } from './user-wallet/user-wallet.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env'
+    }),
     AuthModule,
     UserModule,
     DatabaseModule,
