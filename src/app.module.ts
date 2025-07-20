@@ -16,7 +16,7 @@ import { UserWalletModule } from './user-wallet/user-wallet.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env'
+      envFilePath: __dirname + '../.env'
     }),
     AuthModule,
     UserModule,
