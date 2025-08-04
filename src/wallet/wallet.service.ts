@@ -53,7 +53,18 @@ export class WalletService {
   // }
 
   async update(id: string, updateWalletDto: UpdateWalletDto, user: User) {
-    const wallet = await this.databaseService.wallet.updateMany({
+    const walletExists = await this.databaseService.wallet.findUnique({
+      where: {
+        id,
+        owner_id: user.id
+      }
+    });
+
+    if (!walletExists) throw new NotFoundException({
+      message: 'A carteira informada não foi encontrada'
+    });
+
+    const wallet = await this.databaseService.wallet.update({
       where: {
         id,
         owner_id: user.id
@@ -61,11 +72,7 @@ export class WalletService {
       data: {
         name: updateWalletDto.name
       }
-    })
-
-    if (!wallet.count) throw new NotFoundException({
-      message: 'A carteira informada não foi encontrada'
-    })
+    });
 
     return wallet;
   }
