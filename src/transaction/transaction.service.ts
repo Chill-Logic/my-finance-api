@@ -32,7 +32,22 @@ export class TransactionService {
     });
   }
 
-  async findAll(wallet_id: string) {
+  async findAll(wallet_id: string, user: User) {
+    const wallet = await this.databaseService.wallet.findUnique({
+      where: {
+        id: wallet_id,
+        user_wallets: {
+          some: {
+            user_id: user.id
+          }
+        }
+      }
+    })
+
+    if (!wallet) throw new NotFoundException({
+      message: 'A carteira informada não foi encontrada'
+    });
+
     const transactions = await this.databaseService.transaction.findMany({
       where: { wallet_id }
     });
@@ -56,22 +71,80 @@ export class TransactionService {
     return { transactions, total: depositSum - withdrawSum };
   }
 
-  findOne(id: string) {
-    return this.databaseService.transaction.findUnique({
-      where: { id }
+  async findOne(id: string, user: User) {
+    const transaction = await this.databaseService.transaction.findUnique({
+      where: {
+        id,
+        wallet: {
+          user_wallets: {
+            some: {
+              user_id: user.id
+            }
+          }
+        }
+      }
     });
+
+    if (!transaction) throw new NotFoundException({
+      message: 'A transação informada não foi encontrada'
+    });
+
+    return transaction;
   }
 
-  update(id: string, updateTransactionDto: UpdateTransactionDto) {
-    return this.databaseService.transaction.update({
-      where: { id },
+  async update(id: string, updateTransactionDto: UpdateTransactionDto, user: User) {
+    const transactionExists = await this.databaseService.transaction.findUnique({
+      where: {
+        id,
+        wallet: {
+          user_wallets: {
+            some: {
+              user_id: user.id
+            }
+          }
+        }
+      }
+    });
+
+    if (!transactionExists) throw new NotFoundException({
+      message: 'A transação informada não foi encontrada'
+    });
+
+    const transaction = await this.databaseService.transaction.update({
+      where: {
+        id,
+        wallet: {
+          user_wallets: {
+            some: {
+              user_id: user.id
+            }
+          }
+        }
+      },
       data: updateTransactionDto,
     });
+
+    return transaction;
   }
 
-  remove(id: string) {
-    return this.databaseService.transaction.delete({
-      where: { id },
+  async remove(id: string, user: User) {
+    const transaction = await this.databaseService.transaction.deleteMany({
+      where: {
+        id,
+        wallet: {
+          user_wallets: {
+            some: {
+              user_id: user.id
+            }
+          }
+        }
+      },
     });
+
+    if (!transaction.count) throw new NotFoundException({
+      message: 'A transação informada não foi encontrada'
+    });
+
+    return transaction;
   }
 }
