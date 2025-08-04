@@ -16,8 +16,8 @@ export class TransactionController {
   }
 
   @Get()
-  findAll(@Query() { wallet_id }: QueryWalletIdDto, @Request() { user }: { user: User }) {
-    return this.transactionService.findAll(wallet_id, user);
+  findAll(@Query() queryDto: QueryWalletIdDto, @Request() { user }: { user: User }) {
+    return this.transactionService.findAll(queryDto, user);
   }
 
   @Get(':id')

@@ -3,6 +3,7 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { DatabaseService } from '../database/database.service';
 import { User } from '@prisma/client';
+import { QueryWalletIdDto } from './dto/query-wallet-id.dto';
 
 @Injectable()
 export class TransactionService {
@@ -32,7 +33,7 @@ export class TransactionService {
     });
   }
 
-  async findAll(wallet_id: string, user: User) {
+  async findAll({ wallet_id, start_date, end_date }: QueryWalletIdDto, user: User) {
     const wallet = await this.databaseService.wallet.findUnique({
       where: {
         id: wallet_id,
@@ -48,14 +49,32 @@ export class TransactionService {
       message: 'A carteira informada não foi encontrada'
     });
 
+    start_date = start_date ? new Date(start_date) : undefined;
+    start_date?.setUTCHours(3, 0, 0, 0);
+
+    end_date = end_date ? new Date(end_date) : undefined;
+    end_date?.setDate(end_date.getDate() + 1);
+    end_date?.setUTCHours(3, 0, 0, 0);
+
     const transactions = await this.databaseService.transaction.findMany({
-      where: { wallet_id }
+      where: {
+        wallet_id,
+        transaction_date: {
+          gte: start_date,
+          lt: end_date,
+        }
+      },
+      orderBy: { transaction_date: 'desc' }
     });
 
     const { _sum: { value: depositSum } } = await this.databaseService.transaction.aggregate({
       where: {
         kind: 'deposit',
-        wallet_id
+        wallet_id,
+        transaction_date: {
+          gte: start_date,
+          lt: end_date,
+        }
       },
       _sum: { value: true }
     });
@@ -63,7 +82,11 @@ export class TransactionService {
     const { _sum: { value: withdrawSum } } = await this.databaseService.transaction.aggregate({
       where: {
         kind: 'withdraw',
-        wallet_id
+        wallet_id,
+        transaction_date: {
+          gte: start_date,
+          lt: end_date,
+        }
       },
       _sum: { value: true }
     });

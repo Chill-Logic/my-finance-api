@@ -1,5 +1,6 @@
 import { $Enums, Transaction } from "@prisma/client";
-import { IsDateString, IsEnum, IsMongoId, IsNumber, IsString } from "class-validator";
+import { Type } from "class-transformer";
+import { IsDate, IsEnum, IsMongoId, IsNumber, IsString } from "class-validator";
 
 export class CreateTransactionDto implements Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'discarded_at'> {
 
@@ -15,6 +16,7 @@ export class CreateTransactionDto implements Omit<Transaction, 'id' | 'created_a
   @IsMongoId({ message: 'O ID deve ser um ID Mongo válido' })
   wallet_id: string;
 
-  @IsDateString()
+  @Type(() => Date)
+  @IsDate()
   transaction_date: Date;
 }
