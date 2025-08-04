@@ -7,7 +7,6 @@
 ```bash
 $ npm install
 $ npx prisma generate
-$ npm run build
 ```
 
 ## Compile and run the project
@@ -20,6 +19,7 @@ $ npm run start
 $ npm run start:dev
 
 # production mode
+$ npm run build
 $ npm run start:prod
 ```
 
