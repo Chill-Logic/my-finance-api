@@ -1,13 +1,11 @@
 import { UserWallet } from "@prisma/client";
-import { IsBoolean, IsEmail, IsHexadecimal, IsOptional, IsString, Length } from "class-validator";
+import { IsEmail, IsMongoId } from "class-validator";
 
 export class CreateUserWalletDto implements Omit<UserWallet, 'id' | 'user_id' | 'accepted' | 'created_at' | 'updated_at' | 'discarded_at'> {
 
   @IsEmail()
   user_email: string;
 
-  @IsString()
-  @Length(24, 24, { message: 'O ID deve conter exatamente 24 caracteres' })
-  @IsHexadecimal({ message: 'O ID deve conter apenas caracteres hexadecimais' })
+  @IsMongoId({ message: 'O ID deve ser um ID Mongo válido' })
   wallet_id: string;
 }

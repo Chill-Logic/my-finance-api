@@ -1,5 +1,5 @@
 import { $Enums, Transaction } from "@prisma/client";
-import { IsDate, IsDateString, IsEnum, IsHexadecimal, IsNumber, IsString, Length } from "class-validator";
+import { IsDateString, IsEnum, IsMongoId, IsNumber, IsString } from "class-validator";
 
 export class CreateTransactionDto implements Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'discarded_at'> {
 
@@ -12,9 +12,7 @@ export class CreateTransactionDto implements Omit<Transaction, 'id' | 'created_a
   @IsEnum($Enums.TransactionKind,{})
   kind: $Enums.TransactionKind;
 
-  @IsString()
-  @Length(24, 24, { message: 'O ID deve conter exatamente 24 caracteres' })
-  @IsHexadecimal({ message: 'O ID deve conter apenas caracteres hexadecimais' })
+  @IsMongoId({ message: 'O ID deve ser um ID Mongo válido' })
   wallet_id: string;
 
   @IsDateString()

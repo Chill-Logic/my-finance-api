@@ -3,6 +3,7 @@ import { UserWalletService } from './user-wallet.service';
 import { CreateUserWalletDto } from './dto/create-user-wallet.dto';
 // import { UpdateUserWalletDto } from './dto/update-user-wallet.dto';
 import { User } from '@prisma/client';
+import { ParamIdDto } from '../database/dto/param-id.dto';
 
 @Controller('user-wallets')
 export class UserWalletController {
@@ -20,24 +21,24 @@ export class UserWalletController {
   }
 
   @Post(':id/accept')
-  async accept(@Param('id') id: string, @Request() { user }: { user: User }) {
+  async accept(@Param() { id }: ParamIdDto, @Request() { user }: { user: User }) {
     await this.userWalletService.acceptInvite(id, user);
     return { message: "Convite aceito com sucesso!" }
   }
 
   @Post(':id/reject')
-  async reject(@Param('id') id: string, @Request() { user }: { user: User }) {
+  async reject(@Param() { id }: ParamIdDto, @Request() { user }: { user: User }) {
     await this.userWalletService.rejectInvite(id, user);
     return { message: "Convite rejeitado com sucesso!" }
   }
 
   // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateUserWalletDto: UpdateUserWalletDto) {
+  // update(@Param() { id }: ParamIdDto, @Body() updateUserWalletDto: UpdateUserWalletDto) {
   //   return this.userWalletService.update(+id, updateUserWalletDto);
   // }
 
   // @Delete(':id')
-  // remove(@Param('id') id: string) {
+  // remove(@Param() { id }: ParamIdDto) {
   //   return this.userWalletService.remove(+id);
   // }
 }
