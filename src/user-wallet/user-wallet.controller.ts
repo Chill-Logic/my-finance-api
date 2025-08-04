@@ -1,34 +1,43 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
 import { UserWalletService } from './user-wallet.service';
 import { CreateUserWalletDto } from './dto/create-user-wallet.dto';
-import { UpdateUserWalletDto } from './dto/update-user-wallet.dto';
+// import { UpdateUserWalletDto } from './dto/update-user-wallet.dto';
+import { User } from '@prisma/client';
 
 @Controller('user-wallets')
 export class UserWalletController {
   constructor(private readonly userWalletService: UserWalletService) {}
 
   @Post()
-  create(@Body() createUserWalletDto: CreateUserWalletDto) {
-    return this.userWalletService.create(createUserWalletDto);
+  async create(@Body() createUserWalletDto: CreateUserWalletDto, @Request() { user }: { user: User }) {
+    await this.userWalletService.create(createUserWalletDto, user);
+    return { message: "Usuário convidado com sucesso!" }
   }
 
   @Get()
-  findAll() {
-    return this.userWalletService.findAll();
+  invites(@Request() { user }: { user: User }) {
+    return this.userWalletService.findInvites(user);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userWalletService.findOne(+id);
+  @Post(':id')
+  async accept(@Param('id') id: string, @Request() { user }: { user: User }) {
+    await this.userWalletService.acceptInvite(id, user);
+    return { message: "Convite aceito com sucesso!" }
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserWalletDto: UpdateUserWalletDto) {
-    return this.userWalletService.update(+id, updateUserWalletDto);
+  @Post(':id')
+  async reject(@Param('id') id: string, @Request() { user }: { user: User }) {
+    await this.userWalletService.rejectInvite(id, user);
+    return { message: "Convite rejeitado com sucesso!" }
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userWalletService.remove(+id);
-  }
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateUserWalletDto: UpdateUserWalletDto) {
+  //   return this.userWalletService.update(+id, updateUserWalletDto);
+  // }
+
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return this.userWalletService.remove(+id);
+  // }
 }

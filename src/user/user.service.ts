@@ -39,7 +39,8 @@ export class UserService {
             user_wallets: {
               create: {
                 user: { connect: { id: current_user.id } },
-                users_main_wallet: { connect: { id: current_user.id } }
+                users_main_wallet: { connect: { id: current_user.id } },
+                accepted: true
               }
             }
           }

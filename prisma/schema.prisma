@@ -48,6 +48,7 @@ model UserWallet {
   wallet_id         String    @db.ObjectId
   wallet            Wallet    @relation(fields: [wallet_id], references: [id])
   users_main_wallet User[]    @relation("main_user_wallet")
+  accepted          Boolean   @default(false)
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   discarded_at      DateTime?

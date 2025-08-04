@@ -9,32 +9,32 @@ export class WalletController {
   constructor(private readonly walletService: WalletService) {}
 
   @Get('main')
-  async findMain(@Request() req: { user: User }) {
-    return await this.walletService.findOneByUserWalletId(req.user.main_user_wallet_id);
+  async findMain(@Request() { user }: { user: User }) {
+    return await this.walletService.findOneByUserWalletId(user.main_user_wallet_id);
   }
 
   @Post()
-  create(@Body() createWalletDto: CreateWalletDto) {
-    return this.walletService.create(createWalletDto);
+  create(@Body() createWalletDto: CreateWalletDto, @Request() { user }: { user: User }) {
+    return this.walletService.create(createWalletDto, user);
   }
 
   @Get()
-  findAll() {
-    return this.walletService.findAll();
+  findAll(@Request() { user }: { user: User }) {
+    return this.walletService.findAll(user);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.walletService.findOne(id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.walletService.findOne(id);
+  // }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateWalletDto: UpdateWalletDto) {
-    return this.walletService.update(id, updateWalletDto);
+  update(@Param('id') id: string, @Body() updateWalletDto: UpdateWalletDto, @Request() { user }: { user: User }) {
+    return this.walletService.update(id, updateWalletDto, user);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.walletService.remove(id);
-  }
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return this.walletService.remove(id);
+  // }
 }
