@@ -19,13 +19,13 @@ export class UserWalletController {
     return this.userWalletService.findInvites(user);
   }
 
-  @Post(':id')
+  @Post(':id/accept')
   async accept(@Param('id') id: string, @Request() { user }: { user: User }) {
     await this.userWalletService.acceptInvite(id, user);
     return { message: "Convite aceito com sucesso!" }
   }
 
-  @Post(':id')
+  @Post(':id/reject')
   async reject(@Param('id') id: string, @Request() { user }: { user: User }) {
     await this.userWalletService.rejectInvite(id, user);
     return { message: "Convite rejeitado com sucesso!" }
