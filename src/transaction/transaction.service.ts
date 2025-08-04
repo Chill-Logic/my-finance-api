@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { DatabaseService } from '../database/database.service';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class TransactionService {
@@ -10,7 +11,22 @@ export class TransactionService {
   ) {}
 
   
-  create(createTransactionDto: CreateTransactionDto) {
+  async create(createTransactionDto: CreateTransactionDto, user: User) {
+    const wallet = await this.databaseService.wallet.findUnique({
+      where: {
+        id: createTransactionDto.wallet_id,
+        user_wallets: {
+          some: {
+            user_id: user.id
+          }
+        }
+      }
+    })
+
+    if (!wallet) throw new NotFoundException({
+      message: 'A carteira informada não foi encontrada'
+    });
+
     return this.databaseService.transaction.create({
       data: createTransactionDto,
     });
