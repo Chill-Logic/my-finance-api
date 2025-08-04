@@ -7,8 +7,8 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('me')
-  findOne(@Request() req: { user: User }) {
-    const { password, ...user_data } = req.user;
+  findOne(@Request() { user }: { user: User }) {
+    const { password, ...user_data } = user;
     return user_data;
   }
 }
