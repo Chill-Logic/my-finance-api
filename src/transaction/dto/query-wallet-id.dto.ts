@@ -3,7 +3,7 @@ import { IsDate, IsMongoId, IsOptional } from "class-validator";
 
 export class QueryWalletIdDto {
   
-  @IsMongoId({ message: 'O ID deve ser um ID Mongo válido' })
+  @IsMongoId({ message: 'O id deve ser hexadecimal e conter 24 caracteres' })
   wallet_id: string;
 
   @Type(() => Date)

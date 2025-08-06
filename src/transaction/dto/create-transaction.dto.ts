@@ -13,7 +13,7 @@ export class CreateTransactionDto implements Omit<Transaction, 'id' | 'created_a
   @IsEnum($Enums.TransactionKind,{})
   kind: $Enums.TransactionKind;
 
-  @IsMongoId({ message: 'O ID deve ser um ID Mongo válido' })
+  @IsMongoId({ message: 'O wallet_id deve ser hexadecimal e conter 24 caracteres' })
   wallet_id: string;
 
   @Type(() => Date)

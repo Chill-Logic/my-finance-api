@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe } from '@nestjs/common';
+import { HttpStatus, ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -9,7 +9,8 @@ async function bootstrap() {
   });
 
   app.useGlobalPipes(new ValidationPipe({
-    transform: true
+    transform: true,
+    errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY
   }));
 
   await app.listen(process.env.PORT ?? 3000);

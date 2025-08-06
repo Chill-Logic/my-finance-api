@@ -6,6 +6,6 @@ export class CreateUserWalletDto implements Omit<UserWallet, 'id' | 'user_id' | 
   @IsEmail()
   user_email: string;
 
-  @IsMongoId({ message: 'O ID deve ser um ID Mongo válido' })
+  @IsMongoId({ message: 'O id deve ser hexadecimal e conter 24 caracteres' })
   wallet_id: string;
 }
