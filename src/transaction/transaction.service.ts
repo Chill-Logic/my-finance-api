@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { DatabaseService } from '../database/database.service';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { QueryWalletIdDto } from './dto/query-wallet-id.dto';
 
 @Injectable()
@@ -49,32 +49,26 @@ export class TransactionService {
       message: 'A carteira informada não foi encontrada'
     });
 
-    start_date = start_date ? new Date(start_date) : undefined;
-    start_date?.setUTCHours(3, 0, 0, 0);
+    if (start_date) start_date.setUTCHours(3, 0, 0, 0);
+    if (end_date) end_date.setUTCHours(3, 0, 0, 0);
 
-    end_date = end_date ? new Date(end_date) : undefined;
-    end_date?.setDate(end_date.getDate() + 1);
-    end_date?.setUTCHours(3, 0, 0, 0);
+    const transactionQuery: Prisma.TransactionWhereInput = {
+      wallet_id,
+      transaction_date: {
+        gte: start_date,
+        lt: end_date,
+      }
+    }
 
     const transactions = await this.databaseService.transaction.findMany({
-      where: {
-        wallet_id,
-        transaction_date: {
-          gte: start_date,
-          lt: end_date,
-        }
-      },
+      where: transactionQuery,
       orderBy: { transaction_date: 'desc' }
     });
 
     const { _sum: { value: depositSum } } = await this.databaseService.transaction.aggregate({
       where: {
         kind: 'deposit',
-        wallet_id,
-        transaction_date: {
-          gte: start_date,
-          lt: end_date,
-        }
+        ...transactionQuery
       },
       _sum: { value: true }
     });
@@ -82,11 +76,7 @@ export class TransactionService {
     const { _sum: { value: withdrawSum } } = await this.databaseService.transaction.aggregate({
       where: {
         kind: 'withdraw',
-        wallet_id,
-        transaction_date: {
-          gte: start_date,
-          lt: end_date,
-        }
+        ...transactionQuery
       },
       _sum: { value: true }
     });
