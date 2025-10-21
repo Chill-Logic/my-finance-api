@@ -28,6 +28,8 @@ export class TransactionService {
       message: 'A carteira informada não foi encontrada'
     });
 
+    createTransactionDto.transaction_date.setUTCHours(3, 0, 0, 0);
+
     return this.databaseService.transaction.create({
       data: createTransactionDto,
     });
@@ -122,6 +124,10 @@ export class TransactionService {
     if (!transactionExists) throw new NotFoundException({
       message: 'A transação informada não foi encontrada'
     });
+
+    if (updateTransactionDto.transaction_date) {
+      updateTransactionDto.transaction_date.setUTCHours(3, 0, 0, 0);
+    }
 
     const transaction = await this.databaseService.transaction.update({
       where: {
