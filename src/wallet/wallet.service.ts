@@ -35,8 +35,8 @@ export class WalletService {
     });
   }
 
-  findAll(user: User) {
-    return this.databaseService.wallet.findMany({
+  async findAll(user: User) {
+    const wallets = await this.databaseService.wallet.findMany({
       where: {
         user_wallets: {
           some: {
@@ -46,6 +46,21 @@ export class WalletService {
         }
       }
     });
+
+    const walletsWithTotal = await Promise.all(wallets.map(async (wallet) => {
+      const { _sum: { value: depositSum } } = await this.databaseService.transaction.aggregate({
+        where: { wallet_id: wallet.id, kind: 'deposit' },
+        _sum: { value: true }
+      });
+      const { _sum: { value: withdrawSum } } = await this.databaseService.transaction.aggregate({
+        where: { wallet_id: wallet.id, kind: 'withdraw' },
+        _sum: { value: true }
+      });
+
+      return { ...wallet, total: depositSum - withdrawSum };
+    }));
+
+    return walletsWithTotal;
   }
 
   // findOne(id: string) {

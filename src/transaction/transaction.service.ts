@@ -31,7 +31,7 @@ export class TransactionService {
     createTransactionDto.transaction_date.setUTCHours(3, 0, 0, 0);
 
     return this.databaseService.transaction.create({
-      data: createTransactionDto,
+      data: { ...createTransactionDto, user_id: user.id },
     });
   }
 
@@ -52,7 +52,10 @@ export class TransactionService {
     });
 
     if (start_date) start_date.setUTCHours(3, 0, 0, 0);
-    if (end_date) end_date.setUTCHours(3, 0, 0, 0);
+    if (end_date) {
+      end_date?.setDate(end_date.getDate() + 1)
+      end_date.setUTCHours(3, 0, 0, 0);
+    }
 
     const transactionQuery: Prisma.TransactionWhereInput = {
       wallet_id,
@@ -64,7 +67,8 @@ export class TransactionService {
 
     const transactions = await this.databaseService.transaction.findMany({
       where: transactionQuery,
-      orderBy: { transaction_date: 'desc' }
+      orderBy: { transaction_date: 'desc' },
+      include: { user: { select: { name: true, email: true } } }
     });
 
     const { _sum: { value: depositSum } } = await this.databaseService.transaction.aggregate({
