@@ -2,7 +2,7 @@ import { $Enums, Transaction } from "@prisma/client";
 import { Type } from "class-transformer";
 import { IsDate, IsEnum, IsMongoId, IsNumber, IsString } from "class-validator";
 
-export class CreateTransactionDto implements Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'discarded_at'> {
+export class CreateTransactionDto implements Omit<Transaction, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'discarded_at'> {
 
   @IsString()
   description: string;
