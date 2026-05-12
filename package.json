@@ -17,10 +17,18 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prisma:format": "prisma format"
+    "migration:create": "npx mikro-orm migration:create",
+    "migration:up": "npx mikro-orm migration:up",
+    "migration:down": "npx mikro-orm migration:down",
+    "schema:update": "npx mikro-orm schema:update --run"
   },
   "dependencies": {
     "@faker-js/faker": "^9.8.0",
+    "@mikro-orm/cli": "^6.6.6",
+    "@mikro-orm/core": "^6.6.6",
+    "@mikro-orm/migrations": "^6.6.6",
+    "@mikro-orm/nestjs": "^6.1.1",
+    "@mikro-orm/postgresql": "^6.6.6",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -28,7 +36,6 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
-    "@prisma/client": "^6.9.0",
     "@types/bcrypt": "^5.0.2",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
@@ -55,7 +62,6 @@
     "eslint": "^9.18.0",
     "globals": "^16.0.0",
     "jest": "^29.7.0",
-    "prisma": "^6.9.0",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
@@ -81,5 +87,11 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "mikro-orm": {
+    "useTsNode": true,
+    "configPaths": [
+      "./src/database/mikro-orm.config.ts"
+    ]
   }
 }
