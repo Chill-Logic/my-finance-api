@@ -118,7 +118,7 @@ export class TransactionService {
       message: 'A transação informada não foi encontrada'
     });
 
-    await this.em.remove(transaction).flush;
+    await this.em.remove(transaction).flush();
   }
 
   private async sumTransactions(
