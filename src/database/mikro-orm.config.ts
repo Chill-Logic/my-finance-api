@@ -1,10 +1,6 @@
 import 'dotenv/config';
 import { Options } from '@mikro-orm/core';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
-import { User } from '../app/user/entities/user.entity';
-import { Wallet } from '../app/wallet/entities/wallet.entity';
-import { UserWallet } from '../app/user-wallet/entities/user-wallet.entity';
-import { Transaction } from '../app/transaction/entities/transaction.entity';
 
 const config: Options = {
   driver: PostgreSqlDriver,
@@ -19,8 +15,8 @@ const config: Options = {
     },
   },
 
-  entities: ['dist/**/*.entity.js'],
-  entitiesTs: ['src/**/*.entity.ts'],
+  entities: [`${__dirname}/../app/**/*.entity.js`],
+  entitiesTs: [`${__dirname}/../app/**/*.entity.ts`],
 
   migrations: {
     path: 'dist/migrations',
