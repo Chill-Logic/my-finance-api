@@ -29,7 +29,7 @@ import config from '../database/mikro-orm.config';
     MikroOrmModule.forRootAsync({
       driver: PostgreSqlDriver,
       inject: [ConfigService],
-      useFactory: () => ({autoLoadEntities: true, ...config}),
+      useFactory: () => ({autoLoadEntities: true, ...config, entities: undefined, entitiesTs: undefined}),
     })
   ],
   controllers: [AppController],
