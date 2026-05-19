@@ -19,7 +19,7 @@ const config: Options = {
     },
   },
 
-  entities: [User, Wallet, UserWallet, Transaction],
+  entities: ['dist/**/*.entity.js'],
   entitiesTs: ['src/**/*.entity.ts'],
 
   migrations: {
