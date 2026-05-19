@@ -11,11 +11,12 @@ const config: Options = {
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT),
   dbName: process.env.DB_NAME,
-  schema: process.env.DB_SCHEMA,
   user: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
-  schemaGenerator: {
-    ignoreSchema: ['auth', 'storage', 'realtime', 'vault'],
+  driverOptions: {
+    connection: {
+      options: `-c search_path=${process.env.DB_SCHEMA}`,
+    },
   },
 
   entities: [User, Wallet, UserWallet, Transaction],
@@ -25,6 +26,7 @@ const config: Options = {
     path: 'dist/migrations',
     pathTs: 'src/migrations',
     glob: '!(*.d).{js,ts}',
+    tableName: `${process.env.DB_SCHEMA}.mikro_orm_migrations`,
   },
 };
 

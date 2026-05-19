@@ -13,10 +13,7 @@ import { UserWalletModule } from './user-wallet/user-wallet.module';
 import { join } from 'path';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
-import { User } from './user/entities/user.entity';
-import { Wallet } from './wallet/entities/wallet.entity';
-import { UserWallet } from './user-wallet/entities/user-wallet.entity';
-import { Transaction } from './transaction/entities/transaction.entity';
+import config from '../database/mikro-orm.config';
 
 @Module({
   imports: [
@@ -32,25 +29,7 @@ import { Transaction } from './transaction/entities/transaction.entity';
     MikroOrmModule.forRootAsync({
       driver: PostgreSqlDriver,
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        driver: PostgreSqlDriver,
-        host: config.getOrThrow<string>('DB_HOST'),
-        port: config.getOrThrow<number>('DB_PORT'),
-        dbName: config.getOrThrow<string>('DB_NAME'),
-        schema: config.getOrThrow<string>('DB_SCHEMA'),
-        user: config.getOrThrow<string>('DB_USERNAME'),
-        password: config.getOrThrow<string>('DB_PASSWORD'),
-        
-        entities: [User, Wallet, UserWallet, Transaction],
-        
-        entitiesTs: ['src/**/*.entity.ts'],
-
-        migrations: {
-          path: 'dist/migrations',
-          pathTs: 'src/migrations',
-          glob: '!(*.d).{js,ts}',
-        },
-      }),
+      useFactory: () => config,
     })
   ],
   controllers: [AppController],

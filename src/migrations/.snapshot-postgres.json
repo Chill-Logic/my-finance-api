@@ -1,8 +1,8 @@
 {
   "namespaces": [
-    "my_finance_dev"
+    "public"
   ],
-  "name": "my_finance_dev",
+  "name": "public",
   "tables": [
     {
       "columns": {
@@ -67,7 +67,7 @@
         }
       },
       "name": "wallets",
-      "schema": "my_finance_dev",
+      "schema": "public",
       "indexes": [
         {
           "keyName": "wallets_pkey",
@@ -87,11 +87,11 @@
           "columnNames": [
             "owner_id"
           ],
-          "localTableName": "my_finance_dev.wallets",
+          "localTableName": "public.wallets",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "my_finance_dev.users",
+          "referencedTableName": "public.users",
           "updateRule": "cascade"
         }
       },
@@ -180,7 +180,7 @@
         }
       },
       "name": "users",
-      "schema": "my_finance_dev",
+      "schema": "public",
       "indexes": [
         {
           "columnNames": [
@@ -210,11 +210,11 @@
           "columnNames": [
             "main_user_wallet_id"
           ],
-          "localTableName": "my_finance_dev.users",
+          "localTableName": "public.users",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "my_finance_dev.user_wallets",
+          "referencedTableName": "public.user_wallets",
           "deleteRule": "set null",
           "updateRule": "cascade"
         }
@@ -293,7 +293,7 @@
         }
       },
       "name": "user_wallets",
-      "schema": "my_finance_dev",
+      "schema": "public",
       "indexes": [
         {
           "keyName": "user_wallets_pkey",
@@ -313,11 +313,11 @@
           "columnNames": [
             "user_id"
           ],
-          "localTableName": "my_finance_dev.user_wallets",
+          "localTableName": "public.user_wallets",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "my_finance_dev.users",
+          "referencedTableName": "public.users",
           "updateRule": "cascade"
         },
         "user_wallets_wallet_id_foreign": {
@@ -325,11 +325,11 @@
           "columnNames": [
             "wallet_id"
           ],
-          "localTableName": "my_finance_dev.user_wallets",
+          "localTableName": "public.user_wallets",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "my_finance_dev.wallets",
+          "referencedTableName": "public.wallets",
           "updateRule": "cascade"
         }
       },
@@ -439,7 +439,7 @@
         }
       },
       "name": "transactions",
-      "schema": "my_finance_dev",
+      "schema": "public",
       "indexes": [
         {
           "keyName": "transactions_pkey",
@@ -459,11 +459,11 @@
           "columnNames": [
             "wallet_id"
           ],
-          "localTableName": "my_finance_dev.transactions",
+          "localTableName": "public.transactions",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "my_finance_dev.wallets",
+          "referencedTableName": "public.wallets",
           "updateRule": "cascade"
         },
         "transactions_user_id_foreign": {
@@ -471,11 +471,11 @@
           "columnNames": [
             "user_id"
           ],
-          "localTableName": "my_finance_dev.transactions",
+          "localTableName": "public.transactions",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "my_finance_dev.users",
+          "referencedTableName": "public.users",
           "updateRule": "cascade"
         }
       },
