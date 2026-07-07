@@ -5,19 +5,16 @@
 
 # Read more: https://github.com/cyu/rack-cors
 
-# Rails.application.config.middleware.insert_before 0, Rack::Cors do
-#   allow do
-#     origins "example.com"
-#
-#     resource "*",
-#       headers: :any,
-#       methods: [:get, :post, :put, :patch, :delete, :options, :head]
-#   end
-# end
-
+# Em development libera qualquer origem; nos demais ambientes só as origens
+# listadas em CORS_ORIGINS (separadas por vírgula, ex: https://app.dominio.com,https://dominio.com).
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    origins '*'
-    resource '*', headers: :any, methods: [:get, :post, :patch, :put, :delete]
+    if Rails.env.development?
+      origins '*'
+    else
+      origins(*ENV.fetch('CORS_ORIGINS', '').split(',').map(&:strip).reject(&:empty?))
+    end
+
+    resource '*', headers: :any, methods: [:get, :post, :patch, :put, :delete, :options, :head]
   end
 end
