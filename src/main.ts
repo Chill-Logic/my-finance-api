@@ -14,6 +14,15 @@ async function bootstrap() {
     stopAtFirstError: true
   }));
 
+  app.enableCors({
+    // em dev: reflete a origem do front (localhost:qualquer-porta).
+    // em prod: defina CORS_ORIGINS="https://app.seudominio.com,https://..."
+    origin: process.env.CORS_ORIGINS
+      ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+      : true,
+    credentials: true,
+  });
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
