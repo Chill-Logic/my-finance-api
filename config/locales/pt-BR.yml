@@ -1,0 +1,67 @@
+pt-BR:
+  activerecord:
+    errors:
+      messages:
+        record_invalid: "Validação falhou: %{errors}"
+      models:
+        user:
+          attributes:
+            password:
+              blank: "não pode ficar em branco"
+            email:
+              taken: "já está em uso"
+
+        wallet:
+          attributes:
+            name:
+              blank: "não pode ficar em branco"
+
+        user_wallet:
+          attributes:
+            user_id:
+              taken: "já foi convidado para essa carteira"
+
+        transaction:
+          attributes:
+            description:
+              blank: "não pode ficar em branco"
+            value:
+              blank: "não pode ficar em branco"
+            kind:
+              blank: "não pode ficar em branco"
+            transaction_date:
+              blank: "não pode ficar em branco"
+
+    attributes:
+      user:
+        name: "Nome"
+        email: "E-mail"
+        password: "Senha"
+        password_confirmation: "Confirmação da Senha"
+        main_user_wallet: "Carteira Principal"
+        main_user_wallet_id: "Carteira Principal"
+
+      wallet:
+        name: "Nome"
+        owner: "Dono"
+        owner_id: "Dono"
+
+      user_wallet:
+        user: "Usuário"
+        user_id: "Usuário"
+        wallet: "Carteira"
+        wallet_id: "Carteira"
+        accepted: "Aceito"
+
+      transaction:
+        description: "Descrição"
+        value: "Valor"
+        kind: "Tipo"
+        transaction_date: "Data da Transação"
+        wallet: "Carteira"
+        wallet_id: "Carteira"
+        user: "Usuário"
+        user_id: "Usuário"
+        kinds:
+          deposit: "Depósito"
+          withdraw: "Saque"

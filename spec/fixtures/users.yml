@@ -1,0 +1,11 @@
+gabriel:
+  name: Gabriel
+  email: gabriel@example.com
+  encrypted_password: <%= Devise::Encryptor.digest(User, '123123') %>
+  main_user_wallet: gabriel_main
+
+maria:
+  name: Maria
+  email: maria@example.com
+  encrypted_password: <%= Devise::Encryptor.digest(User, '123123') %>
+  main_user_wallet: maria_main

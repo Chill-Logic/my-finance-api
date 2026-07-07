@@ -1,0 +1,23 @@
+salary:
+  description: Salário
+  value: 500000
+  kind: deposit
+  transaction_date: 2026-07-01
+  wallet: gabriel_main
+  user: gabriel
+
+market:
+  description: Mercado
+  value: 35000
+  kind: withdraw
+  transaction_date: 2026-07-05
+  wallet: gabriel_main
+  user: gabriel
+
+old_deposit:
+  description: Depósito antigo
+  value: 10000
+  kind: deposit
+  transaction_date: 2026-06-01
+  wallet: gabriel_main
+  user: gabriel

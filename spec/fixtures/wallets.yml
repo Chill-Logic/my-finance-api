@@ -1,0 +1,15 @@
+gabriel_main:
+  name: Minha Carteira
+  owner: gabriel
+
+maria_main:
+  name: Minha Carteira
+  owner: maria
+
+shared:
+  name: Carteira Compartilhada
+  owner: gabriel
+
+casa:
+  name: Casa
+  owner: maria
