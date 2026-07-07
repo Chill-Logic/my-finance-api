@@ -1,0 +1,211 @@
+openapi: "3.0.3"
+
+info:
+  title: My Finance API — User Wallets (Convites)
+  version: "1.0.0"
+  description: |
+    API REST do My Finance.
+    ## Autenticação
+    X-API-Key: <token> + Authorization: Bearer <token>
+
+servers:
+  - url: http://localhost:3000/v1
+    description: Desenvolvimento local
+  - url: http://localhost:1143/v1
+    description: Docker (dev)
+  - url: '{baseUrl}/v1'
+    description: URL customizável
+    variables:
+      baseUrl:
+        default: http://localhost:3000
+
+tags:
+  - name: User Wallets
+    description: Convites de compartilhamento de carteira — o dono convida por e-mail e o convidado aceita ou recusa
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    UserWallet:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        wallet_id:
+          type: string
+          format: uuid
+        accepted:
+          type: boolean
+        wallet_name:
+          type: string
+          example: "Casa"
+        owner_name:
+          type: string
+          description: Nome do dono da carteira
+          example: "Maria"
+        discarded_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Mensagem de erro"
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Operação realizada com sucesso!"
+
+security:
+  - bearerAuth: []
+    apiKeyAuth: []
+
+paths:
+
+  /user_wallets:
+    get:
+      tags: [User Wallets]
+      summary: Listar convites pendentes
+      description: Retorna os convites pendentes (`accepted false`) do usuário autenticado, paginados.
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Lista paginada de convites pendentes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserWallet"
+                  total_count:
+                    type: integer
+                  total_pages:
+                    type: integer
+    post:
+      tags: [User Wallets]
+      summary: Convidar usuário para carteira
+      description: O dono da carteira convida outro usuário pelo e-mail. O convite nasce pendente (`accepted false`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_wallet]
+              properties:
+                user_wallet:
+                  type: object
+                  required: [user_email, wallet_id]
+                  properties:
+                    user_email:
+                      type: string
+                      format: email
+                    wallet_id:
+                      type: string
+                      format: uuid
+                      description: Carteira do usuário autenticado (dono)
+      responses:
+        "201":
+          description: Usuário convidado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "422":
+          description: Usuário não encontrado, carteira não encontrada (ou não é do dono) ou convite duplicado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /user_wallets/{id}/accept:
+    post:
+      tags: [User Wallets]
+      summary: Aceitar convite
+      description: Aceita um convite pendente do usuário autenticado, liberando o acesso à carteira.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Convite aceito com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "422":
+          description: Convite não encontrado ou já respondido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /user_wallets/{id}/reject:
+    post:
+      tags: [User Wallets]
+      summary: Recusar convite
+      description: Recusa (descarta) um convite pendente do usuário autenticado.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Convite recusado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "422":
+          description: Convite não encontrado ou já respondido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"

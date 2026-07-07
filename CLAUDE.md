@@ -18,6 +18,7 @@ API do My Finance, sistema de controle de finanças pessoais. Backend Rails que 
 - **active_model_serializers** — serialização JSON
 - **will_paginate** — paginação
 - **rack-cors** — CORS para os clientes (app e webapp)
+- **rswag-api** + **rswag-ui** — Swagger UI e documentação OpenAPI
 - **dotenv-rails** — variáveis de ambiente em dev
 - **RSpec**, **WebMock**, **SimpleCov** — testes
 
@@ -67,6 +68,12 @@ Todas as rotas estão sob `/v1`:
 - `/v1/core/options/:entity/:type` — opções traduzidas de enums (ex.: `transaction/kind`).
 
 Respostas em JSON seguem o envelope `{ data: ... }` para sucesso e `{ message: "..." }` para erros e ações. Listagens são paginadas (`page`, `per_page`) com `total_count`/`total_pages` no envelope.
+
+## Documentação (Swagger)
+
+- Swagger UI em `/api-docs`, protegido por HTTP Basic (`SWAGGER_USERNAME`/`SWAGGER_PASSWORD` no `.env`).
+- Os specs OpenAPI 3.0 são **escritos à mão** em `public/api-docs/v1/*.yaml` (um arquivo por recurso: `auth.yaml`, `wallets.yaml`, `transactions.yaml`, `user_wallets.yaml`) e registrados em `config/initializers/rswag_ui.rb` — não usamos rswag-specs/geração automática. Ao alterar um endpoint, atualize o YAML correspondente.
+- O template `swagger/index.erb` customiza o UI: persiste o Authorize, aplica automaticamente o token retornado pelo `POST /v1/auth/sign_in` (`data.token`) e lembra o servidor selecionado.
 
 ## Autenticação
 

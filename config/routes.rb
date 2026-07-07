@@ -1,4 +1,12 @@
 Rails.application.routes.draw do
+  swagger_auth = lambda do |username, password|
+    ActiveSupport::SecurityUtils.secure_compare(username.to_s, ENV.fetch('SWAGGER_USERNAME', '')) &
+      ActiveSupport::SecurityUtils.secure_compare(password.to_s, ENV.fetch('SWAGGER_PASSWORD', ''))
+  end
+
+  mount Rack::Auth::Basic.new(Rswag::Ui::Engine, 'My Finance API Docs', &swagger_auth) => '/api-docs'
+  mount Rack::Auth::Basic.new(Rswag::Api::Engine, 'My Finance API Docs', &swagger_auth) => '/api-docs'
+
   devise_for :users
 
   get "up" => "rails/health#show", as: :rails_health_check

@@ -273,6 +273,12 @@ GEM
       rspec-mocks (>= 3.13.0, < 5.0.0)
       rspec-support (>= 3.13.0, < 5.0.0)
     rspec-support (3.13.7)
+    rswag-api (2.17.0)
+      activesupport (>= 5.2, < 8.2)
+      railties (>= 5.2, < 8.2)
+    rswag-ui (2.17.0)
+      actionpack (>= 5.2, < 8.2)
+      railties (>= 5.2, < 8.2)
     rubyzip (2.4.1)
     securerandom (0.4.1)
     selenium-webdriver (4.10.0)
@@ -339,6 +345,8 @@ DEPENDENCIES
   rack-cors
   rails (~> 8.0)
   rspec-rails
+  rswag-api
+  rswag-ui
   selenium-webdriver
   simplecov
   tzinfo-data

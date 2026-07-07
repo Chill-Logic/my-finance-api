@@ -21,6 +21,11 @@ Esta é uma aplicação Rails 8.1 somente API para o sistema My Finance, gerenci
 - **Convenção de Namespace**: `V1::` para versionamento; `V1::Core::` para utilitários públicos (enums)
 - **Endpoints de Enum**: `GET /v1/core/enums/options/:entity/:type` usando reflexão de `ApplicationHelper.enum_options`
 
+### Documentação Swagger
+- **Swagger UI** em `/api-docs` (rswag-api + rswag-ui), atrás de HTTP Basic (`SWAGGER_USERNAME`/`SWAGGER_PASSWORD`)
+- **Specs manuais**: OpenAPI 3.0 escrito à mão em `public/api-docs/v1/*.yaml` (um YAML por recurso), registrado em `config/initializers/rswag_ui.rb` — sem rswag-specs. **Ao criar/alterar endpoints, atualize o YAML correspondente**
+- **Template customizado** em `swagger/index.erb` (local de override do rswag-ui): persiste o Authorize e aplica automaticamente o `data.token` retornado pelo sign_in
+
 ### Banco de Dados e Models
 - **Enums**: Definidos nos models como `enum :kind, ["deposit", "withdraw"].index_with(&:itself)`, com labels traduzidos em `config/locales/pt-BR.yml` (`activerecord.attributes.<model>.<enum_plural>.<value>`)
 - **Multi-schema**: Todos os ambientes compartilham o mesmo banco, isolados por schema do Postgres (`POSTGRES_SCHEMA` → `schema_search_path` no `database.yml`); a task `db:ensure_schema` cria o schema antes de `db:migrate`/`db:schema:load`. O `public` fica no final do search_path para resolver as extensões

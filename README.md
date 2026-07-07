@@ -50,7 +50,9 @@ O projeto tem cobertura de testes de requisição (request specs) para todos os 
 
 ## Documentação
 
-A documentação do projeto será feita utilizando o Postman.
+A documentação da API é servida pelo Swagger UI em `/api-docs` ([rswag-api](rswag-link) + [rswag-ui](rswag-link)), protegida por HTTP Basic (`SWAGGER_USERNAME`/`SWAGGER_PASSWORD` no `.env`).
+
+Os specs OpenAPI 3.0 são escritos à mão em `public/api-docs/v1/*.yaml` (um arquivo por recurso) e registrados em `config/initializers/rswag_ui.rb`. O template `swagger/index.erb` customiza o UI para aplicar automaticamente o token JWT retornado pelo login no botão Authorize.
 
 [devise-link]:https://github.com/heartcombo/devise
 [jwt-link]:https://github.com/jwt/ruby-jwt
@@ -58,3 +60,4 @@ A documentação do projeto será feita utilizando o Postman.
 [discard-link]:https://github.com/jhawthorn/discard
 [papertrail-gem-link]:https://github.com/paper-trail-gem/paper_trail
 [will-paginate-link]:https://github.com/mislav/will_paginate
+[rswag-link]:https://github.com/rswag/rswag
