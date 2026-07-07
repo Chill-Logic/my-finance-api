@@ -64,6 +64,12 @@ module ApplicationHelper
     } if model_not_exists
 
     enums = model.defined_enums.keys
+    return {
+      error?: enums.empty?,
+      message: "Não foram encontrados enums para a entidade #{entity}.",
+      options: []
+    } if enums.empty?
+
     type_not_exists = !enums.include?(type)
     return {
       error?: type_not_exists,
