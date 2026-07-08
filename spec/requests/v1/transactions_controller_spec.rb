@@ -25,6 +25,20 @@ RSpec.describe V1::TransactionsController, type: :request do
       expect(body["total"]).to eq(465000)
     end
 
+    it "filtra por período usando o timezone opcional" do
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id, start_date: "2026-07-01", end_date: "2026-07-31", timezone: "America/New_York" })
+      expect(response).to have_http_status(:ok)
+      body = JSON.parse(response.body)
+      expect(body["data"].map { |transaction| transaction["id"] }).to match_array([transactions(:market).id])
+    end
+
+    it "usa o fuso da aplicação quando o timezone é inválido" do
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id, start_date: "2026-07-01", end_date: "2026-07-31", timezone: "Fuso/Inexistente" })
+      expect(response).to have_http_status(:ok)
+      body = JSON.parse(response.body)
+      expect(body["data"].map { |transaction| transaction["id"] }).to match_array([transactions(:salary).id, transactions(:market).id])
+    end
+
     it "ignora datas não parseáveis em vez de zerar o resultado" do
       make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id, start_date: "null", end_date: "undefined" })
       expect(response).to have_http_status(:ok)

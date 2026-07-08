@@ -3,15 +3,13 @@ class Transaction < ApplicationRecord
 
   default_scope -> { kept }
 
-  # Casteia antes de filtrar: valor não-parseável (ex: "null" vindo do front)
-  # viraria `transaction_date <= NULL` e zeraria o resultado.
-  scope :from_date, ->(date) {
+  scope :from_date, ->(date, timezone = nil) {
     date = ActiveModel::Type::Date.new.cast(date)
-    where(transaction_date: date..) if date
+    where(transaction_date: date.in_time_zone(Time.find_zone(timezone) || Time.zone)..) if date
   }
-  scope :to_date, ->(date) {
+  scope :to_date, ->(date, timezone = nil) {
     date = ActiveModel::Type::Date.new.cast(date)
-    where(transaction_date: ..date) if date
+    where(transaction_date: ..date.in_time_zone(Time.find_zone(timezone) || Time.zone).end_of_day) if date
   }
 
   enum :kind, ["deposit", "withdraw"].index_with(&:itself)

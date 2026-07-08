@@ -3,7 +3,7 @@ class Wallet < ApplicationRecord
 
   default_scope -> { kept }
 
-  scope :accessible_by, ->(user) { joins(:user_wallets).where(user_wallets: { user_id: user.id, accepted: true, discarded_at: nil }) }
+  scope :accessible_by, ->(user) { joins(:user_wallets).where(user_wallets: { user_id: user.id, accepted: true }) }
 
   dependent_discard :user_wallets
   dependent_discard :transactions

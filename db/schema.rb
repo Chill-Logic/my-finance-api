@@ -20,7 +20,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_000500) do
     t.string "description"
     t.datetime "discarded_at"
     t.string "kind"
-    t.date "transaction_date"
+    t.datetime "transaction_date"
     t.datetime "updated_at", null: false
     t.uuid "user_id", null: false
     t.integer "value"

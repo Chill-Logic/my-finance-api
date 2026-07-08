@@ -7,7 +7,8 @@
 # O que a task faz:
 #   - users.password -> users.encrypted_password (hashes bcrypt continuam válidos)
 #     + colunas do Devise recoverable (reset_password_token/sent_at)
-#   - timestamptz -> timestamp em UTC; transaction_date (meia-noite de SP) -> date
+#   - timestamptz -> timestamp em UTC (incluindo transaction_date, que preserva
+#     a meia-noite de SP gravada pelo Nest)
 #   - alinha limits/not null/check constraints com o db/schema.rb
 #   - troca índices/FKs do MikroORM pelos equivalentes com nomes Rails, para o
 #     dump do schema.rb (automático em development) não divergir do commitado
@@ -107,7 +108,8 @@ namespace :nest do
   def convert_transactions(connection)
     puts "Convertendo transactions..."
     # transaction_date era timestamptz normalizado à meia-noite de São Paulo
-    # (03:00 UTC); a data correta é a do fuso de SP, não a de UTC.
+    # (03:00 UTC); vira timestamp em UTC, preservando o instante — a app
+    # (Time.zone Brasilia) continua exibindo a meia-noite de SP.
     connection.execute(<<~SQL)
       ALTER TABLE transactions
         ALTER COLUMN description TYPE varchar,
@@ -115,7 +117,7 @@ namespace :nest do
         ALTER COLUMN value DROP NOT NULL,
         ALTER COLUMN kind TYPE varchar,
         ALTER COLUMN kind DROP NOT NULL,
-        ALTER COLUMN transaction_date TYPE date USING (transaction_date AT TIME ZONE 'America/Sao_Paulo')::date,
+        ALTER COLUMN transaction_date TYPE timestamp(6) USING transaction_date AT TIME ZONE 'UTC',
         ALTER COLUMN transaction_date DROP NOT NULL,
         ALTER COLUMN created_at TYPE timestamp(6) USING created_at AT TIME ZONE 'UTC',
         ALTER COLUMN updated_at TYPE timestamp(6) USING updated_at AT TIME ZONE 'UTC',
@@ -178,7 +180,7 @@ namespace :nest do
       %w[users encrypted_password] => "character varying",
       %w[users reset_password_token] => "character varying",
       %w[users created_at] => "timestamp without time zone",
-      %w[transactions transaction_date] => "date",
+      %w[transactions transaction_date] => "timestamp without time zone",
       %w[transactions kind] => "character varying",
       %w[versions item_id] => "uuid",
     }

@@ -3,7 +3,7 @@ class V1::TransactionsController < ApplicationController
   before_action :set_transaction, only: [:show, :update, :destroy]
 
   def index
-    @transactions = @wallet.transactions.from_date(params[:start_date]).to_date(params[:end_date])
+    @transactions = @wallet.transactions.from_date(params[:start_date], params[:timezone]).to_date(params[:end_date], params[:timezone])
     total = @transactions.balance
 
     @transactions = search_bar(@transactions, params[:terms], ["transactions.description"])

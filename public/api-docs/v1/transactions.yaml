@@ -57,7 +57,7 @@ components:
           example: "Depósito"
         transaction_date:
           type: string
-          format: date
+          format: date-time
         wallet_id:
           type: string
           format: uuid
@@ -98,7 +98,8 @@ components:
               enum: [deposit, withdraw]
             transaction_date:
               type: string
-              format: date
+              format: date-time
+              description: Aceita data simples (ex - "2026-07-06"), interpretada como meia-noite no fuso da aplicação (Brasília)
             wallet_id:
               type: string
               format: uuid
@@ -148,6 +149,13 @@ paths:
           schema:
             type: string
             format: date
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+          example: America/New_York
+          description: Timezone (nome IANA) usado para os limites de dia de `start_date`/`end_date`. Ausente ou inválido usa o fuso da aplicação (Brasília).
         - name: terms
           in: query
           required: false

@@ -4,7 +4,7 @@ class CreateTransactions < ActiveRecord::Migration[8.1]
       t.string :description
       t.integer :value
       t.string :kind
-      t.date :transaction_date
+      t.datetime :transaction_date
       t.references :wallet, null: false, type: :uuid, foreign_key: true
       t.references :user, null: false, type: :uuid, foreign_key: true
 
