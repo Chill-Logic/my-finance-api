@@ -49,13 +49,13 @@ RSpec.describe V1::TransactionsController, type: :request do
 
     it "retorna erro se o usuário não tem acesso à carteira" do
       make_request(endpoint: v1_transactions_path, token: second_user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id })
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Carteira não encontrada.")
     end
 
     it "retorna erro se a carteira não for enviada" do
       make_request(endpoint: v1_transactions_path, token: user_token, method: :get)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Carteira não encontrada.")
     end
   end
@@ -72,7 +72,7 @@ RSpec.describe V1::TransactionsController, type: :request do
 
     it "retorna erro para transação de carteira sem acesso" do
       make_request(endpoint: v1_transactions_path + "/#{transactions(:salary).id}", token: second_user_token, method: :get)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Transação não encontrada.")
     end
   end
@@ -91,14 +91,14 @@ RSpec.describe V1::TransactionsController, type: :request do
     it "retorna erro se dados inválidos" do
       params = { transaction: { description: "", value: nil, kind: nil, transaction_date: nil, wallet_id: wallets(:gabriel_main).id } }
       make_request(endpoint: v1_transactions_path, token: user_token, method: :post, params: params)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to be_present
     end
 
     it "retorna erro se o usuário não tem acesso à carteira" do
       params = { transaction: { description: "Aluguel", value: 150000, kind: "withdraw", transaction_date: "2026-07-06", wallet_id: wallets(:maria_main).id } }
       make_request(endpoint: v1_transactions_path, token: user_token, method: :post, params: params)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Carteira não encontrada.")
     end
   end
@@ -114,14 +114,14 @@ RSpec.describe V1::TransactionsController, type: :request do
     it "retorna erro se transação não existe" do
       params = { transaction: { description: "Feira" } }
       make_request(endpoint: v1_transactions_path + "/#{RequestHelper::MISSING_UUID}", token: user_token, method: :patch, params: params)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Transação não encontrada.")
     end
 
     it "retorna erro se dados inválidos" do
       params = { transaction: { description: "" } }
       make_request(endpoint: v1_transactions_path + "/#{transactions(:market).id}", token: user_token, method: :patch, params: params)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to be_present
     end
   end
@@ -136,7 +136,7 @@ RSpec.describe V1::TransactionsController, type: :request do
 
     it "retorna erro se transação não existe" do
       make_request(endpoint: v1_transactions_path + "/#{RequestHelper::MISSING_UUID}", token: user_token, method: :delete)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Transação não encontrada.")
     end
   end

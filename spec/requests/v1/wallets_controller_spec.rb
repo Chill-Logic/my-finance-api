@@ -41,7 +41,7 @@ RSpec.describe V1::WalletsController, type: :request do
 
     it "retorna erro para carteira sem acesso" do
       make_request(endpoint: v1_wallets_path + "/#{wallets(:maria_main).id}", token: user_token, method: :get)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Carteira não encontrada.")
     end
   end
@@ -62,7 +62,7 @@ RSpec.describe V1::WalletsController, type: :request do
     it "retorna erro se dados inválidos" do
       params = { wallet: { name: "" } }
       make_request(endpoint: v1_wallets_path, token: user_token, method: :post, params: params)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to be_present
     end
   end
@@ -85,7 +85,7 @@ RSpec.describe V1::WalletsController, type: :request do
     it "retorna erro se carteira não existe" do
       params = { wallet: { name: "Novo Nome" } }
       make_request(endpoint: v1_wallets_path + "/#{RequestHelper::MISSING_UUID}", token: user_token, method: :patch, params: params)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Carteira não encontrada.")
     end
   end

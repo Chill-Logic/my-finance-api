@@ -8,19 +8,19 @@ RSpec.describe V1::AuthsController, type: :request do
   describe "POST #sign_in" do
     it "bloqueia o login do usuário caso o email não exista" do
       make_request(endpoint: v1_auth_path + "/sign_in", method: :post, params: { email: "test@example.com", password: "123123" })
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Usuário não encontrado.")
     end
 
     it "bloqueia o login do usuário caso a senha esteja incorreta" do
       make_request(endpoint: v1_auth_path + "/sign_in", method: :post, params: { email: "gabriel@example.com", password: "12" })
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Senha inválida.")
     end
 
     it "bloqueia o login do usuário caso o email não seja enviado" do
       make_request(endpoint: v1_auth_path + "/sign_in", method: :post, params: { password: "123123" })
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "faz o login do usuário" do
@@ -51,13 +51,13 @@ RSpec.describe V1::AuthsController, type: :request do
     it "bloqueia a criação caso o email já esteja em uso" do
       params = { name: "Repetido", email: "gabriel@example.com", password: "123123" }
       make_request(endpoint: v1_auth_path + "/sign_up", method: :post, params: params)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to be_present
     end
 
     it "bloqueia a criação caso os dados sejam inválidos" do
       make_request(endpoint: v1_auth_path + "/sign_up", method: :post, params: { name: "", email: "", password: "" })
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to be_present
     end
   end

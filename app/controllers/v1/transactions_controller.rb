@@ -19,19 +19,19 @@ class V1::TransactionsController < ApplicationController
   def create
     @transaction = @wallet.transactions.new(transaction_params.merge(user: @current_user))
 
-    return render json: { message: @transaction.errors.full_messages.join(', ') }, status: :unprocessable_entity unless @transaction.save
+    return render json: { message: @transaction.errors.full_messages.join(', ') }, status: :unprocessable_content unless @transaction.save
 
     render json: { data: @transaction }, status: :created
   end
 
   def update
-    return render json: { message: @transaction.errors.full_messages.join(', ') }, status: :unprocessable_entity unless @transaction.update(transaction_params)
+    return render json: { message: @transaction.errors.full_messages.join(', ') }, status: :unprocessable_content unless @transaction.update(transaction_params)
 
     render json: { data: @transaction }, status: :ok
   end
 
   def destroy
-    return render json: { message: @transaction.errors.full_messages.join(', ') }, status: :unprocessable_entity unless @transaction.discard
+    return render json: { message: @transaction.errors.full_messages.join(', ') }, status: :unprocessable_content unless @transaction.discard
 
     render json: { message: 'Transação removida com sucesso!' }, status: :ok
   end
@@ -41,12 +41,12 @@ class V1::TransactionsController < ApplicationController
   def set_wallet
     wallet_id = params[:wallet_id] || params.dig(:transaction, :wallet_id)
     @wallet = Wallet.accessible_by(@current_user).find_by(id: wallet_id)
-    render json: { message: 'Carteira não encontrada.' }, status: :unprocessable_entity if @wallet.nil?
+    render json: { message: 'Carteira não encontrada.' }, status: :unprocessable_content if @wallet.nil?
   end
 
   def set_transaction
     @transaction = Transaction.where(wallet_id: Wallet.accessible_by(@current_user).select("wallets.id")).find_by(id: params[:id])
-    render json: { message: 'Transação não encontrada.' }, status: :unprocessable_entity if @transaction.nil?
+    render json: { message: 'Transação não encontrada.' }, status: :unprocessable_content if @transaction.nil?
   end
 
   def transaction_params

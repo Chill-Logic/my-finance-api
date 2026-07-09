@@ -12,7 +12,7 @@ class V1::WalletsController < ApplicationController
   def main
     @wallet = @current_user.main_user_wallet&.wallet
 
-    return render json: { message: 'Carteira principal não encontrada.' }, status: :unprocessable_entity if @wallet.nil?
+    return render json: { message: 'Carteira principal não encontrada.' }, status: :unprocessable_content if @wallet.nil?
 
     render json: { data: @wallet }, status: :ok
   end
@@ -24,19 +24,19 @@ class V1::WalletsController < ApplicationController
   def create
     @wallet = Wallet.new(wallet_params.merge(owner: @current_user))
 
-    return render json: { message: @wallet.errors.full_messages.join(', ') }, status: :unprocessable_entity unless @wallet.save
+    return render json: { message: @wallet.errors.full_messages.join(', ') }, status: :unprocessable_content unless @wallet.save
 
     render json: { data: @wallet }, status: :created
   end
 
   def update
-    return render json: { message: @wallet.errors.full_messages.join(', ') }, status: :unprocessable_entity unless @wallet.update(wallet_params)
+    return render json: { message: @wallet.errors.full_messages.join(', ') }, status: :unprocessable_content unless @wallet.update(wallet_params)
 
     render json: { data: @wallet }, status: :ok
   end
 
   def destroy
-    return render json: { message: @wallet.errors.full_messages.join(', ') }, status: :unprocessable_entity unless @wallet.discard
+    return render json: { message: @wallet.errors.full_messages.join(', ') }, status: :unprocessable_content unless @wallet.discard
 
     render json: { message: 'Carteira removida com sucesso!' }, status: :ok
   end
@@ -45,7 +45,7 @@ class V1::WalletsController < ApplicationController
 
   def set_wallet
     @wallet = Wallet.accessible_by(@current_user).find_by(id: params[:id])
-    render json: { message: 'Carteira não encontrada.' }, status: :unprocessable_entity if @wallet.nil?
+    render json: { message: 'Carteira não encontrada.' }, status: :unprocessable_content if @wallet.nil?
   end
 
   def authenticate_owner

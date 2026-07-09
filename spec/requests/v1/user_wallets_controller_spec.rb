@@ -35,21 +35,21 @@ RSpec.describe V1::UserWalletsController, type: :request do
     it "retorna erro se o email não existe" do
       params = { user_wallet: { user_email: "naoexiste@example.com", wallet_id: wallets(:gabriel_main).id } }
       make_request(endpoint: v1_user_wallets_path, token: user_token, method: :post, params: params)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Não foi encontrado usuário com esse e-mail.")
     end
 
     it "retorna erro se o usuário não é dono da carteira" do
       params = { user_wallet: { user_email: "maria@example.com", wallet_id: wallets(:casa).id } }
       make_request(endpoint: v1_user_wallets_path, token: user_token, method: :post, params: params)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Carteira não encontrada.")
     end
 
     it "retorna erro se o usuário já foi convidado" do
       params = { user_wallet: { user_email: "maria@example.com", wallet_id: wallets(:shared).id } }
       make_request(endpoint: v1_user_wallets_path, token: user_token, method: :post, params: params)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to include("já foi convidado para essa carteira")
     end
   end
@@ -64,13 +64,13 @@ RSpec.describe V1::UserWalletsController, type: :request do
 
     it "retorna erro se o convite não é do usuário" do
       make_request(endpoint: v1_user_wallets_path + "/#{user_wallets(:maria_shared_invite).id}/accept", token: user_token, method: :post)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Convite não encontrado ou já respondido.")
     end
 
     it "retorna erro se o convite já foi aceito" do
       make_request(endpoint: v1_user_wallets_path + "/#{user_wallets(:maria_main).id}/accept", token: second_user_token, method: :post)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Convite não encontrado ou já respondido.")
     end
   end
@@ -85,7 +85,7 @@ RSpec.describe V1::UserWalletsController, type: :request do
 
     it "retorna erro se o convite não existe" do
       make_request(endpoint: v1_user_wallets_path + "/#{RequestHelper::MISSING_UUID}/reject", token: second_user_token, method: :post)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["message"]).to eq("Convite não encontrado ou já respondido.")
     end
   end
