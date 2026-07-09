@@ -1,0 +1,66 @@
+name: Deploy dev
+
+on:
+  push:
+    branches: [dev]
+
+# Nunca roda dois deploys ao mesmo tempo; um push novo espera o anterior acabar.
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+env:
+  APP_NAME: my-finance-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instala o cloudflared
+        run: |
+          sudo curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+          sudo chmod +x /usr/local/bin/cloudflared
+
+      - name: Configura o SSH (via Cloudflare Access)
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          cat >> ~/.ssh/config <<CONFIG
+          Host deploy
+            HostName $REMOTE_HOST
+            User $REMOTE_USER
+            IdentityFile ~/.ssh/id_deploy
+            StrictHostKeyChecking accept-new
+            ProxyCommand cloudflared access ssh --hostname %h
+          CONFIG
+
+      - name: Envia os arquivos (rsync)
+        run: |
+          rsync -az --delete --relative \
+            --exclude '.bundle' \
+            --exclude 'log/*' \
+            --exclude 'tmp/*' \
+            --exclude 'storage/*' \
+            --exclude 'coverage' \
+            --exclude '.git/*' \
+            --exclude '.env' \
+            ./ deploy:~/${APP_NAME}
+
+      - name: Atualiza o .env do servidor
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE_DEV }}
+        run: |
+          printf '%s\n' "$ENV_FILE" | ssh deploy "cat > ~/${APP_NAME}/.env"
+
+      - name: Bundle, migrations e restart
+        run: |
+          ssh deploy "bash -lc '~/${APP_NAME}/bin/deploy_server.sh ${APP_NAME}'"
