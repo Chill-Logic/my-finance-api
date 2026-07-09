@@ -41,6 +41,9 @@ jobs:
             IdentityFile ~/.ssh/id_deploy
             StrictHostKeyChecking accept-new
             ProxyCommand cloudflared access ssh --hostname %h
+            ControlMaster auto
+            ControlPath ~/.ssh/cm-%r@%h
+            ControlPersist 2m
           CONFIG
 
       - name: Envia os arquivos (rsync)
@@ -55,12 +58,8 @@ jobs:
             --exclude '.env' \
             ./ deploy:~/${APP_NAME}
 
-      - name: Atualiza o .env do servidor
+      - name: Atualiza o .env, bundle, migrations e restart
         env:
           ENV_FILE: ${{ secrets.ENV_FILE_DEV }}
         run: |
-          printf '%s\n' "$ENV_FILE" | ssh deploy "cat > ~/${APP_NAME}/.env"
-
-      - name: Bundle, migrations e restart
-        run: |
-          ssh deploy "bash -lc '~/${APP_NAME}/bin/deploy_server.sh ${APP_NAME}'"
+          printf '%s\n' "$ENV_FILE" | ssh deploy "cat > ~/${APP_NAME}/.env && bash -lc '~/${APP_NAME}/bin/deploy_server.sh ${APP_NAME}'"
