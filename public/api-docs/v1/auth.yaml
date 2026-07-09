@@ -338,3 +338,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /core/version:
+    get:
+      tags: [Core]
+      summary: Versão do backend em execução
+      description: >
+        Retorna o commit, a data do commit e a branch da versão que está rodando no servidor.
+        Em produção/dev os valores vêm das variáveis de ambiente gravadas pelo CD no deploy;
+        localmente caem no `git` ao vivo. Campos retornam `unknown` quando indisponíveis.
+      security:
+        - apiKeyAuth: []
+      responses:
+        "200":
+          description: Informações de versão do backend
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      hash:
+                        type: string
+                        example: 94cf088
+                        description: Hash curto do commit
+                      date:
+                        type: string
+                        example: "2026-07-08 21:38:00 -0300"
+                        description: Data do commit
+                      branch:
+                        type: string
+                        example: dev
+                        description: Branch do deploy

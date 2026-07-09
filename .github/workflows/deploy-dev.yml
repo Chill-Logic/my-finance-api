@@ -20,6 +20,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Captura a versão (git)
+        run: |
+          echo "GIT_COMMIT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "GIT_COMMIT_DATE=$(git log -1 --format=%ci)" >> "$GITHUB_ENV"
+          echo "GIT_BRANCH=${{ github.ref_name }}" >> "$GITHUB_ENV"
+
       - name: Instala o cloudflared
         run: |
           sudo curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
@@ -62,4 +68,32 @@ jobs:
         env:
           ENV_FILE: ${{ secrets.ENV_FILE_DEV }}
         run: |
-          printf '%s\n' "$ENV_FILE" | ssh deploy "cat > ~/${APP_NAME}/.env && bash -lc '~/${APP_NAME}/bin/deploy_server.sh ${APP_NAME}'"
+          # Escreve o .env do secret e anexa a versão do git (lida pela API em /v1/core/version).
+          {
+            printf '%s\n' "$ENV_FILE"
+            printf 'GIT_COMMIT_HASH=%s\n' "$GIT_COMMIT_HASH"
+            printf 'GIT_COMMIT_DATE=%s\n' "$GIT_COMMIT_DATE"
+            printf 'GIT_BRANCH=%s\n' "$GIT_BRANCH"
+          } | ssh deploy "cat > ~/${APP_NAME}/.env && bash -lc '~/${APP_NAME}/bin/deploy_server.sh ${APP_NAME}'"
+
+      - name: Notifica o Discord
+        if: success() && env.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_DEPLOYS }}
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%s 2>/dev/null || echo "N/A")
+          curl -s -H "Content-Type: application/json" -d "{
+            \"embeds\": [{
+              \"title\": \"Deploy concluído com sucesso\",
+              \"color\": 5763719,
+              \"fields\": [
+                {\"name\": \"Projeto\", \"value\": \"${APP_NAME}\", \"inline\": true},
+                {\"name\": \"Ambiente\", \"value\": \"Dev\", \"inline\": true},
+                {\"name\": \"Branch\", \"value\": \"${{ github.ref_name }}\", \"inline\": true},
+                {\"name\": \"Commit\", \"value\": \"${GIT_COMMIT_HASH} - ${COMMIT_MSG}\", \"inline\": false},
+                {\"name\": \"Disparado por\", \"value\": \"${{ github.actor }}\", \"inline\": true}
+              ],
+              \"footer\": {\"text\": \"GitHub Actions\"},
+              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+            }]
+          }" "$DISCORD_WEBHOOK"

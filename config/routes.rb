@@ -35,6 +35,8 @@ Rails.application.routes.draw do
     end
 
     namespace :core do
+      get 'version', to: 'version#show'
+
       resources :enums, only: [] do
         collection do
           get 'options/:entity/:type', to: 'enums#options'
