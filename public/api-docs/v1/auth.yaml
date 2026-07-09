@@ -22,16 +22,8 @@ info:
     - `/v1/core` — Dados públicos de referência (enums traduzidos)
 
 servers:
-  - url: http://localhost:3000/v1
-    description: Desenvolvimento local
-  - url: http://localhost:1143/v1
-    description: Docker (dev)
-  - url: '{baseUrl}/v1'
-    description: URL customizável
-    variables:
-      baseUrl:
-        default: http://localhost:3000
-        description: URL base do servidor (ex - https://api.seudominio.com)
+  - url: /v1
+    description: Backend atual (mesma origem desta documentação)
 
 tags:
   - name: Auth

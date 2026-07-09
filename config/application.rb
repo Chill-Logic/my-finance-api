@@ -6,6 +6,11 @@ require "rails/all"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+# Middleware que protege o /api-docs com login por formulário (ver lib/swagger_auth.rb).
+require_relative "../lib/swagger_auth"
+# Versão do backend (endpoint /v1/core/version + faixa no Swagger UI).
+require_relative "../lib/version_info"
+
 module MyFinanceApi
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
@@ -23,7 +28,10 @@ module MyFinanceApi
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
-    
+
+    # Login por formulário no Swagger UI (/api-docs), no lugar do HTTP Basic nativo.
+    config.middleware.use SwaggerAuth
+
     config.i18n.default_locale = :'pt-BR'
     config.time_zone = 'Brasilia'
     config.active_record.default_timezone = :utc

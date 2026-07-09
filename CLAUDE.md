@@ -39,7 +39,7 @@ app/
   models/                       # Domínio (ver abaixo)
   serializers/                  # active_model_serializers (1 por modelo)
 config/
-  routes.rb                     # Versionado em /v1; /api-docs (Swagger) atrás de HTTP Basic
+  routes.rb                     # Versionado em /v1; /api-docs (Swagger) atrás de login por formulário
 db/
   migrate/
   schema.rb
@@ -73,9 +73,9 @@ Respostas em JSON seguem o envelope `{ data: ... }` para sucesso e `{ message: "
 
 ## Documentação (Swagger)
 
-- Swagger UI em `/api-docs`, protegido por HTTP Basic (`SWAGGER_USERNAME`/`SWAGGER_PASSWORD` no `.env`).
+- Swagger UI em `/api-docs`, protegido por **login em formulário** (não HTTP Basic — o prompt nativo do navegador não é oferecido ao gerenciador de senhas). O middleware `SwaggerAuth` (`lib/swagger_auth.rb`, registrado em `config/application.rb`) valida `SWAGGER_USERNAME`/`SWAGGER_PASSWORD` (do `.env`), mantém a sessão num cookie assinado (`secret_key_base`, 12h), serve o logo em `/api-docs/logo` (wordmark, tela de login) e `/api-docs/logo-icon` (ícone, header do UI), e tem `/api-docs/logout`. Login inválido reexibe o form com 200 (401 quebraria por causa do Warden do Devise).
 - Os specs OpenAPI 3.0 são **escritos à mão** em `public/api-docs/v1/*.yaml` (um arquivo por recurso: `auth.yaml`, `wallets.yaml`, `transactions.yaml`, `user_wallets.yaml`) e registrados em `config/initializers/rswag_ui.rb` — não usamos rswag-specs/geração automática. Ao alterar um endpoint, atualize o YAML correspondente.
-- O template `swagger/index.erb` customiza o UI: persiste o Authorize, aplica automaticamente o token retornado pelo `POST /v1/auth/sign_in` (`data.token`) e lembra o servidor selecionado.
+- O template `swagger/index.erb` customiza o UI: persiste o Authorize, aplica automaticamente o token retornado pelo `POST /v1/auth/sign_in` (`data.token`), lembra o servidor selecionado e aplica a identidade visual do My Finance (header escuro `#052131` com logo e botão "Sair", acento verde-oliva `#88a15e`, topbar padrão escondida, código da doc em navy no lugar do roxo padrão). A paleta segue o e-mail de redefinição de senha (`app/views/devise/mailer/`). No topo da doc há uma faixa com a versão do build (branch/commit/data) via `VersionInfo` (`lib/version_info.rb`), o mesmo módulo usado pelo `GET /v1/core/version` — lê as envs `GIT_*` do deploy com fallback pro git ao vivo.
 
 ## Autenticação e autorização
 
