@@ -116,6 +116,11 @@ docker-compose up
 
 Containers: `db` (Postgres 15.4), `web` (Rails na porta `${VIRTUAL_PORT}`), `nginx`. O `.env` controla `API_FIXED_TOKEN`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_SCHEMA`, `VIRTUAL_PORT`. Timezone fixada em `America/Sao_Paulo`.
 
+## Deploy
+
+- **Dev**: push na branch `dev` dispara `.github/workflows/deploy-dev.yml` — rsync do código via SSH por Cloudflare Tunnel (`cloudflared access ssh`, sem Access/login na frente; a autenticação é a chave SSH), escrita do `.env` a partir do secret `ENV_FILE_DEV`, e `bin/deploy_server.sh` no servidor (bundle + migrations + restart do serviço systemd de usuário, que relê o `.env`; o script cria o serviço na primeira execução). Secrets: `SSH_PRIVATE_KEY`, `REMOTE_USER`, `REMOTE_HOST`, `ENV_FILE_DEV`. O servidor roda o app sem Docker (mise + puma sob systemd; logs via `journalctl --user -u my-finance-api`).
+- Deploy manual dos arquivos: `./local-config.sh <user> <host>` (só rsync, sem restart).
+
 ## Testes
 
 ```bash
