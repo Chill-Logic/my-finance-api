@@ -20,5 +20,9 @@ production:
 
 test:
   <<: *default
-  database: my_finance_api_test
+  host: <%= ENV.fetch('TEST_POSTGRES_HOST') { 'localhost' } %>
+  port: <%= ENV.fetch('TEST_POSTGRES_PORT') { 5432 } %>
+  username: <%= ENV.fetch('TEST_POSTGRES_USER') { 'postgres' } %>
+  password: <%= ENV.fetch('TEST_POSTGRES_PASSWORD') { 'postgres' } %>
+  database: <%= ENV.fetch('TEST_POSTGRES_DB') { 'my_finance_api_test' } %>
   schema_search_path: public
