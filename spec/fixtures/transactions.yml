@@ -1,0 +1,25 @@
+# transaction_date é datetime gravado em UTC; o ERB converte a meia-noite
+# do fuso da app (Brasília) para UTC, como o cast do model faria em produção.
+salary:
+  description: Salário
+  value: 500000
+  kind: deposit
+  transaction_date: <%= Time.zone.parse("2026-07-01").utc.to_fs(:db) %>
+  wallet: gabriel_main
+  user: gabriel
+
+market:
+  description: Mercado
+  value: 35000
+  kind: withdraw
+  transaction_date: <%= Time.zone.parse("2026-07-05").utc.to_fs(:db) %>
+  wallet: gabriel_main
+  user: gabriel
+
+old_deposit:
+  description: Depósito antigo
+  value: 10000
+  kind: deposit
+  transaction_date: <%= Time.zone.parse("2026-06-01").utc.to_fs(:db) %>
+  wallet: gabriel_main
+  user: gabriel

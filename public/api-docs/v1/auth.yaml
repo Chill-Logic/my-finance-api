@@ -1,0 +1,366 @@
+openapi: "3.0.3"
+
+info:
+  title: My Finance API — Auth, Core & User
+  version: "1.0.0"
+  description: |
+    API REST do My Finance — autenticação, dados de referência (enums) e perfil do usuário autenticado.
+
+    ## Autenticação
+    Todas as requisições exigem o token fixo da API no header:
+    ```
+    X-API-Key: <token>
+    ```
+    Após o login, inclua também o JWT (expiração de 7 dias) nas requisições autenticadas:
+    ```
+    Authorization: Bearer <token>
+    ```
+
+    ## Estrutura de Rotas
+    - `/v1/auth` — Autenticação (login, cadastro, recuperação de senha)
+    - `/v1/users/me` — Perfil do usuário autenticado
+    - `/v1/core` — Dados públicos de referência (enums traduzidos)
+
+servers:
+  - url: /v1
+    description: Backend atual (mesma origem desta documentação)
+
+tags:
+  - name: Auth
+    description: Autenticação e gerenciamento de sessão
+  - name: User
+    description: Perfil do usuário autenticado
+  - name: Core
+    description: Dados públicos de referência
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        main_user_wallet_id:
+          type: string
+          format: uuid
+          description: Vínculo (user_wallet) da carteira principal do usuário
+        discarded_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Mensagem de erro"
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Operação realizada com sucesso!"
+
+security:
+  - bearerAuth: []
+    apiKeyAuth: []
+
+paths:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # AUTH
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /auth/sign_in:
+    post:
+      tags: [Auth]
+      summary: Login
+      description: Autentica o usuário com email e senha e retorna o JWT de acesso (expiração de 7 dias). O Swagger UI aplica o token retornado automaticamente no Authorize.
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+            example:
+              email: "usuario@exemplo.com"
+              password: "senha123"
+      responses:
+        "200":
+          description: Autenticação bem-sucedida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        format: email
+                      name:
+                        type: string
+                      token:
+                        type: string
+                        description: JWT de acesso
+        "422":
+          description: Usuário não encontrado ou senha inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/sign_up:
+    post:
+      tags: [Auth]
+      summary: Cadastro de usuário
+      description: Cria um novo usuário. Uma carteira padrão ("Minha Carteira") é criada automaticamente e vinculada como carteira principal.
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 6
+      responses:
+        "201":
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "422":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/recover_password:
+    post:
+      tags: [Auth]
+      summary: Solicitar redefinição de senha
+      description: Envia email com instruções e token de redefinição de senha.
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Email enviado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "422":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/reset_password:
+    post:
+      tags: [Auth]
+      summary: Redefinir senha
+      description: Redefine a senha usando o token recebido por email.
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password, password_confirmation]
+              properties:
+                token:
+                  type: string
+                  description: Token de redefinição recebido por email
+                password:
+                  type: string
+                  format: password
+                  minLength: 6
+                password_confirmation:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Senha alterada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "422":
+          description: Token inválido ou senhas não conferem
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # CURRENT USER
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /users/me:
+    get:
+      tags: [User]
+      summary: Obter perfil do usuário autenticado
+      responses:
+        "200":
+          description: Dados do usuário autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Token ausente, inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # CORE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /core/enums/options/{entity}/{type}:
+    get:
+      tags: [Core]
+      summary: Listar opções traduzidas de um enum
+      description: Retorna as opções (`value`/`label`) de um enum de um model, com labels traduzidos via locale. Ex. `transaction`/`kind`.
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: entity
+          in: path
+          required: true
+          schema:
+            type: string
+          example: transaction
+          description: Nome do model (singular, snake_case)
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+          example: kind
+          description: Nome do enum no model
+      responses:
+        "200":
+          description: Opções do enum
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                          example: deposit
+                        label:
+                          type: string
+                          example: Depósito
+        "422":
+          description: Entidade ou enum não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /core/version:
+    get:
+      tags: [Core]
+      summary: Versão do backend em execução
+      description: >
+        Retorna o commit, a data do commit e a branch da versão que está rodando no servidor.
+        Em produção/dev os valores vêm das variáveis de ambiente gravadas pelo CD no deploy;
+        localmente caem no `git` ao vivo. Campos retornam `unknown` quando indisponíveis.
+      security:
+        - apiKeyAuth: []
+      responses:
+        "200":
+          description: Informações de versão do backend
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      hash:
+                        type: string
+                        example: 94cf088
+                        description: Hash curto do commit
+                      date:
+                        type: string
+                        example: "2026-07-08 21:38:00 -0300"
+                        description: Data do commit
+                      branch:
+                        type: string
+                        example: dev
+                        description: Branch do deploy

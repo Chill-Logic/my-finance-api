@@ -1,0 +1,28 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  host: <%= ENV['POSTGRES_HOST'] %>
+  pool: <%= ENV['POSTGRES_POOL'] { 5 } %>
+  port: <%= ENV['POSTGRES_PORT'] %>
+  username: <%= ENV['POSTGRES_USER'] %>
+  password: <%= ENV['POSTGRES_PASSWORD'] %>
+  database: <%= ENV.fetch('POSTGRES_DB') { 'my_finance_api' } %>
+  schema_search_path: <%= [ENV.fetch('POSTGRES_SCHEMA') { 'public' }, 'public', 'extensions'].uniq.join(',') %>
+
+development:
+  <<: *default
+
+staging:
+  <<: *default
+
+production:
+  <<: *default
+
+test:
+  <<: *default
+  host: <%= ENV.fetch('TEST_POSTGRES_HOST') { 'localhost' } %>
+  port: <%= ENV.fetch('TEST_POSTGRES_PORT') { 5432 } %>
+  username: <%= ENV.fetch('TEST_POSTGRES_USER') { 'postgres' } %>
+  password: <%= ENV.fetch('TEST_POSTGRES_PASSWORD') { 'postgres' } %>
+  database: <%= ENV.fetch('TEST_POSTGRES_DB') { 'my_finance_api_test' } %>
+  schema_search_path: public

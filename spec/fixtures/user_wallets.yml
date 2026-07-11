@@ -1,0 +1,29 @@
+gabriel_main:
+  user: gabriel
+  wallet: gabriel_main
+  accepted: true
+
+maria_main:
+  user: maria
+  wallet: maria_main
+  accepted: true
+
+gabriel_shared:
+  user: gabriel
+  wallet: shared
+  accepted: true
+
+maria_shared_invite:
+  user: maria
+  wallet: shared
+  accepted: false
+
+gabriel_casa:
+  user: gabriel
+  wallet: casa
+  accepted: true
+
+maria_casa:
+  user: maria
+  wallet: casa
+  accepted: true
