@@ -9,7 +9,7 @@ module VersionInfo
 
   def to_h
     {
-      hash: git_info(%w[GIT_COMMIT_HASH RAILWAY_GIT_COMMIT_SHA], 'git rev-parse --short HEAD'),
+      hash: git_info(%w[GIT_COMMIT_HASH RAILWAY_GIT_COMMIT_SHA], 'git rev-parse --short HEAD')[0, 7],
       date: git_info(%w[GIT_COMMIT_DATE], 'git log -1 --format=%ci'),
       branch: git_info(%w[GIT_BRANCH RAILWAY_GIT_BRANCH], 'git rev-parse --abbrev-ref HEAD')
     }

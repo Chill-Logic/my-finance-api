@@ -32,13 +32,13 @@ RSpec.describe V1::Core::VersionController, type: :request do
       allow(ENV).to receive(:[]).and_call_original
       allow(ENV).to receive(:[]).with('GIT_COMMIT_HASH').and_return(nil)
       allow(ENV).to receive(:[]).with('GIT_BRANCH').and_return(nil)
-      allow(ENV).to receive(:[]).with('RAILWAY_GIT_COMMIT_SHA').and_return('railwaysha')
+      allow(ENV).to receive(:[]).with('RAILWAY_GIT_COMMIT_SHA').and_return('0123456789abcdef')
       allow(ENV).to receive(:[]).with('RAILWAY_GIT_BRANCH').and_return('main')
 
       make_request(endpoint: "/v1/core/version", method: :get)
       expect(response).to have_http_status(:ok)
       data = JSON.parse(response.body)["data"]
-      expect(data["hash"]).to eq("railwaysha")
+      expect(data["hash"]).to eq("0123456")
       expect(data["branch"]).to eq("main")
     end
 
@@ -48,7 +48,7 @@ RSpec.describe V1::Core::VersionController, type: :request do
       allow(ENV).to receive(:[]).with('RAILWAY_GIT_COMMIT_SHA').and_return('railwaysha')
 
       make_request(endpoint: "/v1/core/version", method: :get)
-      expect(JSON.parse(response.body)["data"]["hash"]).to eq("deploysha")
+      expect(JSON.parse(response.body)["data"]["hash"]).to eq("deploys")
     end
 
     it "exige o token da API (X-API-Key)" do
