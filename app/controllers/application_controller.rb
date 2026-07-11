@@ -10,8 +10,12 @@ class ApplicationController < ActionController::API
 
   API_FIXED_TOKEN = ENV['API_FIXED_TOKEN'].freeze
 
+  def route_not_found
+    render json: { message: "Rota não encontrada: #{request.method} #{request.path}" }, status: :not_found
+  end
+
   # Método exigido pelo Papertrail
-  def current_user 
+  def current_user
     current_user ||= @current_user
   end
   

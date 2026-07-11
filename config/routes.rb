@@ -1,6 +1,4 @@
 Rails.application.routes.draw do
-  # A autenticação do /api-docs é feita por login em formulário no middleware SwaggerAuth
-  # (config/application.rb + lib/swagger_auth.rb), não mais por HTTP Basic aqui.
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
 
@@ -48,4 +46,6 @@ Rails.application.routes.draw do
       post :reset_password
     end
   end
+
+  match '*unmatched', to: 'application#route_not_found', via: :all
 end
