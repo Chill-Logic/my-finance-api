@@ -9,13 +9,13 @@ RSpec.describe V1::AuthsController, type: :request do
     it "bloqueia o login do usuário caso o email não exista" do
       make_request(endpoint: v1_auth_path + "/sign_in", method: :post, params: { email: "test@example.com", password: "123123" })
       expect(response).to have_http_status(:unprocessable_content)
-      expect(JSON.parse(response.body)["message"]).to eq("Usuário não encontrado.")
+      expect(JSON.parse(response.body)["message"]).to eq("E-mail ou senha inválidos.")
     end
 
     it "bloqueia o login do usuário caso a senha esteja incorreta" do
       make_request(endpoint: v1_auth_path + "/sign_in", method: :post, params: { email: "gabriel@example.com", password: "12" })
       expect(response).to have_http_status(:unprocessable_content)
-      expect(JSON.parse(response.body)["message"]).to eq("Senha inválida.")
+      expect(JSON.parse(response.body)["message"]).to eq("E-mail ou senha inválidos.")
     end
 
     it "bloqueia o login do usuário caso o email não seja enviado" do
