@@ -80,12 +80,14 @@ jobs:
         if: success() && env.DISCORD_WEBHOOK != ''
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_DEPLOYS }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           COMMIT_MSG=$(git log -1 --pretty=%s 2>/dev/null || echo "N/A")
           curl -s -H "Content-Type: application/json" -d "{
             \"embeds\": [{
               \"title\": \"Deploy concluído com sucesso\",
               \"color\": 5763719,
+              \"url\": \"${RUN_URL}\",
               \"fields\": [
                 {\"name\": \"Projeto\", \"value\": \"${APP_NAME}\", \"inline\": true},
                 {\"name\": \"Ambiente\", \"value\": \"Dev\", \"inline\": true},

@@ -93,6 +93,7 @@ Respostas em JSON seguem o envelope `{ data: ... }` para sucesso e `{ message: "
 - **Multi-schema**: todos os ambientes usam o mesmo banco (`POSTGRES_DB`, default `my_finance_api`), isolados por schema do Postgres via `POSTGRES_SCHEMA` (ex.: `dev`, `prod`) — configurado com `schema_search_path` no `database.yml`. Cada schema tem sua própria `schema_migrations`. A task `db:ensure_schema` (encadeada em `db:migrate`/`db:schema:load`) cria o schema automaticamente se não existir. O ambiente de teste usa banco separado (`my_finance_api_test`, schema `public`).
 - Chaves primárias em `uuid` (`gen_random_uuid()`), configurado como padrão nos generators (`primary_key_type: :uuid`).
 - Migrations em `db/migrate/`; schema atual em `db/schema.rb` — o dump é agnóstico de schema (`dump_schemas` + initializer `schema_dumper.rb`), então não fixa o nome do schema do ambiente.
+- **NUNCA editar `db/schema.rb` à mão.** Toda mudança de estrutura do banco é feita criando uma migration em `db/migrate/` e rodando `bin/rails db:migrate` — o Rails regenera o `db/schema.rb` a partir das migrations. O `schema.rb` é artefato gerado, não fonte de verdade.
 - Soft delete via coluna `discarded_at` em todas as tabelas de domínio.
 - Índices únicos compostos com `discarded_at` (ex.: `users` por `email/discarded_at`, `user_wallets` por `user_id/wallet_id/discarded_at`).
 - Valores monetários em centavos (integer).
@@ -225,4 +226,4 @@ Um serializer por model em `app/serializers/`; `ApplicationRecord#serializable_h
 
 ## Clientes
 
-As interfaces deste backend são o app mobile em `../my-finance-app` (React Native) e o webapp em `../my-finance-webapp` (Vite + React + TypeScript). Ambos consomem as rotas `/v1/*`.
+As interfaces deste backend vivem no monorepo `../MyFinanceApps` (`Chill-Logic/MyFinanceApps`): o app mobile em `apps/mobile` (React Native) e o webapp em `apps/web` (Vite + React + TypeScript), com código compartilhado em `packages/`. Ambos consomem as rotas `/v1/*`.
