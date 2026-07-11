@@ -14,9 +14,15 @@ RSpec.describe "Rotas não reconhecidas", type: :request do
     expect(body["message"]).to include("/v1/rota-que-nao-existe")
   end
 
-  it "não vaza existência de rota para requisição sem token" do
+  it "responde 404 mesmo sem JWT de usuário (só o X-API-Key basta)" do
     make_request(endpoint: "/v1/rota-que-nao-existe", method: :get)
 
-    expect(response).to have_http_status(:unauthorized)
+    expect(response).to have_http_status(:not_found)
+  end
+
+  it "bloqueia com 403 quando falta o X-API-Key (não vaza existência de rota)" do
+    get "/v1/rota-que-nao-existe"
+
+    expect(response).to have_http_status(:forbidden)
   end
 end

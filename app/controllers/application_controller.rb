@@ -10,6 +10,8 @@ class ApplicationController < ActionController::API
 
   API_FIXED_TOKEN = ENV['API_FIXED_TOKEN'].freeze
 
+  skip_before_action :authenticate_user!, :set_paper_trail_whodunnit, only: :route_not_found
+
   def route_not_found
     render json: { message: "Rota não encontrada: #{request.method} #{request.path}" }, status: :not_found
   end
