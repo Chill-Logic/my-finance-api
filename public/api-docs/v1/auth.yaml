@@ -278,6 +278,65 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      tags: [User]
+      summary: Atualizar perfil do usuário autenticado
+      description: >
+        Atualiza os dados do próprio usuário (tela de perfil). Nome e email podem ser alterados
+        livremente. A alteração de senha (`password`) exige o envio da senha atual (`current_password`)
+        como confirmação de identidade.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    current_password:
+                      type: string
+                      format: password
+                      description: Obrigatória quando `password` é informada
+                    password:
+                      type: string
+                      format: password
+                      minLength: 6
+                    password_confirmation:
+                      type: string
+                      format: password
+            example:
+              user:
+                name: "Gabriel Paranhos"
+                email: "gabriel@example.com"
+      responses:
+        "200":
+          description: Perfil atualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Token ausente, inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Dados inválidos ou senha atual incorreta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ════════════════════════════════════════════════════════════════════════════
   # CORE

@@ -4,7 +4,9 @@ class V1::AuthsController < ApplicationController
   def sign_in
     @user = User.find_by_email(params[:email])
 
-    return render json: {message: "E-mail ou senha inválidos."}, status: :unprocessable_content if @user.nil? || !@user.valid_password?(params[:password])
+    return render json: {message: "Usuário não encontrado."}, status: :unprocessable_content if @user.nil?
+
+    return render json: {message: "Senha inválida."}, status: :unprocessable_content unless @user.valid_password?(params[:password])
 
     token = jwt_encode(user_id: @user.id)
     render json: { data: { email: @user.email, name: @user.name, token: token } }, status: :ok
