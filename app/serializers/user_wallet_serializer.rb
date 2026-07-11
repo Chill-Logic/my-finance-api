@@ -1,5 +1,5 @@
 class UserWalletSerializer < ActiveModel::Serializer
-  attributes [:id, :user_id, :wallet_id, :accepted, :wallet_name, :owner_name, :discarded_at, :created_at, :updated_at]
+  attributes(UserWallet.column_names + [:wallet_name, :owner_name])
 
   def wallet_name
     object.wallet.name

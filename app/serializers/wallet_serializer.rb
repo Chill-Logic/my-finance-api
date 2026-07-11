@@ -1,5 +1,5 @@
 class WalletSerializer < ActiveModel::Serializer
-  attributes [:id, :name, :owner_id, :total, :discarded_at, :created_at, :updated_at]
+  attributes(Wallet.column_names + [:total])
 
   def total
     object.total
