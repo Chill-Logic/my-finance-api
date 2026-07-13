@@ -103,5 +103,14 @@ RSpec.describe V1::WalletsController, type: :request do
       make_request(endpoint: v1_wallets_path + "/#{wallets(:casa).id}", token: user_token, method: :delete)
       expect(response).to have_http_status(:forbidden)
     end
+
+    it "reaponta a carteira principal de quem a usava ao remover a carteira" do
+      users(:gabriel).update_column(:main_user_wallet_id, user_wallets(:gabriel_shared).id)
+
+      make_request(endpoint: v1_wallets_path + "/#{wallets(:shared).id}", token: user_token, method: :delete)
+
+      expect(response).to have_http_status(:ok)
+      expect(users(:gabriel).reload.main_user_wallet_id).to eq(user_wallets(:gabriel_main).id)
+    end
   end
 end
