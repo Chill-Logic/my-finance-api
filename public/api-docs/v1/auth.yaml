@@ -284,7 +284,8 @@ paths:
       description: >
         Atualiza os dados do próprio usuário (tela de perfil). Nome e email podem ser alterados
         livremente. A alteração de senha (`password`) exige o envio da senha atual (`current_password`)
-        como confirmação de identidade.
+        como confirmação de identidade. `main_wallet_id` define a carteira principal — deve ser o
+        `id` de uma carteira à qual o usuário tenha acesso aceito.
       requestBody:
         required: true
         content:
@@ -300,6 +301,12 @@ paths:
                     email:
                       type: string
                       format: email
+                    main_wallet_id:
+                      type: string
+                      format: uuid
+                      description: >
+                        ID da carteira a definir como principal. O usuário precisa ter acesso aceito
+                        a ela; caso contrário retorna 422.
                     current_password:
                       type: string
                       format: password
@@ -315,6 +322,7 @@ paths:
               user:
                 name: "Gabriel Paranhos"
                 email: "gabriel@example.com"
+                main_wallet_id: "b3f1c2d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
       responses:
         "200":
           description: Perfil atualizado
