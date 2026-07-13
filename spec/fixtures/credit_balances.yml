@@ -1,0 +1,13 @@
+gabriel_nubank:
+  name: Nubank
+  credit_limit: 1000000
+  closing_day: 3
+  due_day: 10
+  wallet: gabriel_main
+
+shared_credit:
+  name: Cartão compartilhado
+  credit_limit: 500000
+  closing_day: 5
+  due_day: 15
+  wallet: shared

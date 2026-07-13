@@ -1,11 +1,14 @@
-# transaction_date é datetime gravado em UTC; o ERB converte a meia-noite
-# do fuso da app (Brasília) para UTC, como o cast do model faria em produção.
+# transaction_date/settled_at são datetime gravados em UTC; o ERB converte a
+# meia-noite do fuso da app (Brasília) para UTC, como o cast do model faria.
+# Toda transação pende de uma source polimórfica (aqui, uma Account).
 salary:
   description: Salário
   value: 500000
   kind: deposit
   transaction_date: <%= Time.zone.parse("2026-07-01").utc.to_fs(:db) %>
+  settled_at: <%= Time.zone.parse("2026-07-01").utc.to_fs(:db) %>
   wallet: gabriel_main
+  source: gabriel_main_account (Account)
   user: gabriel
 
 market:
@@ -13,7 +16,9 @@ market:
   value: 35000
   kind: withdraw
   transaction_date: <%= Time.zone.parse("2026-07-05").utc.to_fs(:db) %>
+  settled_at: <%= Time.zone.parse("2026-07-05").utc.to_fs(:db) %>
   wallet: gabriel_main
+  source: gabriel_main_account (Account)
   user: gabriel
 
 old_deposit:
@@ -21,5 +26,51 @@ old_deposit:
   value: 10000
   kind: deposit
   transaction_date: <%= Time.zone.parse("2026-06-01").utc.to_fs(:db) %>
+  settled_at: <%= Time.zone.parse("2026-06-01").utc.to_fs(:db) %>
   wallet: gabriel_main
+  source: gabriel_main_account (Account)
+  user: gabriel
+
+# Julho: pendente (sem settled_at) — entra no projetado, não no efetivado.
+pending_bill:
+  description: Conta de luz
+  value: 20000
+  kind: withdraw
+  transaction_date: <%= Time.zone.parse("2026-07-20").utc.to_fs(:db) %>
+  wallet: gabriel_main
+  source: gabriel_main_account (Account)
+  user: gabriel
+
+# Julho: rascunho — aparece na lista, mas é ignorado de ambos os totais.
+draft_plan:
+  description: Planejamento
+  value: 99999
+  kind: deposit
+  transaction_date: <%= Time.zone.parse("2026-07-10").utc.to_fs(:db) %>
+  draft: true
+  wallet: gabriel_main
+  source: gabriel_main_account (Account)
+  user: gabriel
+
+# Compras no crédito (Nubank) no ciclo de agosto — fecha 03/09, vence 10/09.
+nubank_notebook:
+  description: Notebook
+  value: 300000
+  kind: withdraw
+  transaction_date: <%= Time.zone.parse("2026-08-05").utc.to_fs(:db) %>
+  settled_at: <%= Time.zone.parse("2026-08-05").utc.to_fs(:db) %>
+  wallet: gabriel_main
+  source: gabriel_nubank (CreditBalance)
+  credit_card: gabriel_nubank_fisico
+  user: gabriel
+
+nubank_curso:
+  description: Curso
+  value: 50000
+  kind: withdraw
+  transaction_date: <%= Time.zone.parse("2026-08-10").utc.to_fs(:db) %>
+  settled_at: <%= Time.zone.parse("2026-08-10").utc.to_fs(:db) %>
+  wallet: gabriel_main
+  source: gabriel_nubank (CreditBalance)
+  credit_card: gabriel_nubank_virtual
   user: gabriel

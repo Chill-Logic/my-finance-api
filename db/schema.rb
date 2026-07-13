@@ -10,22 +10,65 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_06_000500) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_12_000600) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
-  enable_extension "public.unaccent"
+  enable_extension "unaccent"
+
+  create_table "accounts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "discarded_at"
+    t.integer "initial_balance", default: 0, null: false
+    t.string "kind"
+    t.string "name"
+    t.datetime "updated_at", null: false
+    t.uuid "wallet_id", null: false
+    t.index ["wallet_id"], name: "index_accounts_on_wallet_id"
+  end
+
+  create_table "credit_balances", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.integer "closing_day"
+    t.datetime "created_at", null: false
+    t.integer "credit_limit"
+    t.datetime "discarded_at"
+    t.integer "due_day"
+    t.string "name"
+    t.datetime "updated_at", null: false
+    t.uuid "wallet_id", null: false
+    t.index ["wallet_id"], name: "index_credit_balances_on_wallet_id"
+  end
+
+  create_table "credit_cards", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "credit_balance_id", null: false
+    t.datetime "discarded_at"
+    t.string "last_digits"
+    t.string "name"
+    t.datetime "updated_at", null: false
+    t.index ["credit_balance_id"], name: "index_credit_cards_on_credit_balance_id"
+  end
 
   create_table "transactions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.uuid "credit_card_id"
     t.string "description"
     t.datetime "discarded_at"
+    t.boolean "draft", default: false, null: false
     t.string "kind"
+    t.uuid "paid_credit_balance_id"
+    t.datetime "settled_at"
+    t.uuid "source_id", null: false
+    t.string "source_type", null: false
     t.datetime "transaction_date"
     t.datetime "updated_at", null: false
     t.uuid "user_id", null: false
     t.integer "value"
     t.uuid "wallet_id", null: false
+    t.index ["credit_card_id"], name: "index_transactions_on_credit_card_id"
+    t.index ["paid_credit_balance_id"], name: "index_transactions_on_paid_credit_balance_id"
+    t.index ["source_type", "source_id"], name: "index_transactions_on_source"
     t.index ["user_id"], name: "index_transactions_on_user_id"
+    t.index ["wallet_id", "transaction_date"], name: "index_transactions_on_wallet_id_and_transaction_date"
     t.index ["wallet_id"], name: "index_transactions_on_wallet_id"
   end
 
@@ -76,6 +119,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_000500) do
     t.index ["owner_id"], name: "index_wallets_on_owner_id"
   end
 
+  add_foreign_key "accounts", "wallets"
+  add_foreign_key "credit_balances", "wallets"
+  add_foreign_key "credit_cards", "credit_balances"
+  add_foreign_key "transactions", "credit_balances", column: "paid_credit_balance_id"
+  add_foreign_key "transactions", "credit_cards"
   add_foreign_key "transactions", "users"
   add_foreign_key "transactions", "wallets"
   add_foreign_key "user_wallets", "users"

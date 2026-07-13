@@ -21,7 +21,21 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :transactions
+    resources :accounts
+    resources :credit_balances do
+      member do
+        get :invoice
+        post :pay_invoice
+      end
+    end
+    resources :credit_cards
+
+    resources :transactions do
+      member do
+        post :settle
+        post :unsettle
+      end
+    end
 
     resources :user_wallets, only: [:index, :create] do
       member do

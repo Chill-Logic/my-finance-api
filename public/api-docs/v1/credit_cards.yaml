@@ -1,7 +1,7 @@
 openapi: "3.0.3"
 
 info:
-  title: My Finance API — Wallets
+  title: My Finance API — Credit Cards
   version: "1.0.0"
   description: |
     API REST do My Finance.
@@ -13,8 +13,8 @@ servers:
     description: Backend atual (mesma origem desta documentação)
 
 tags:
-  - name: Wallets
-    description: Carteiras financeiras — acessíveis via vínculo aceito (`user_wallets`); ações de dono exigem `owner_id` igual ao usuário autenticado
+  - name: Credit Cards
+    description: Cartões de um saldo de crédito. Vários cartões compartilham o mesmo limite (`CreditBalance`).
 
 components:
   securitySchemes:
@@ -28,7 +28,7 @@ components:
       name: X-API-Key
 
   schemas:
-    Wallet:
+    CreditCard:
       type: object
       properties:
         id:
@@ -36,18 +36,14 @@ components:
           format: uuid
         name:
           type: string
-          example: "Minha Carteira"
-        owner_id:
+          example: "Físico"
+        last_digits:
+          type: string
+          nullable: true
+          example: "1234"
+        credit_balance_id:
           type: string
           format: uuid
-        total:
-          type: integer
-          description: Saldo efetivado em centavos (só transações efetivadas das contas)
-          example: 475000
-        total_projected:
-          type: integer
-          description: Saldo previsto em centavos (efetivadas + pendentes das contas)
-          example: 455000
         discarded_at:
           type: string
           format: date-time
@@ -59,17 +55,20 @@ components:
           type: string
           format: date-time
 
-    WalletInput:
+    CreditCardInput:
       type: object
-      required: [wallet]
+      required: [credit_card]
       properties:
-        wallet:
+        credit_card:
           type: object
           required: [name]
           properties:
             name:
               type: string
-              example: "Viagem"
+              example: "Virtual"
+            last_digits:
+              type: string
+              example: "5678"
 
     ErrorResponse:
       type: object
@@ -91,12 +90,17 @@ security:
 
 paths:
 
-  /wallets:
+  /credit_cards:
     get:
-      tags: [Wallets]
-      summary: Listar carteiras acessíveis
-      description: Retorna as carteiras que o usuário autenticado pode acessar (vínculo aceito), paginadas.
+      tags: [Credit Cards]
+      summary: Listar cartões de um saldo de crédito
       parameters:
+        - name: credit_balance_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
         - name: terms
           in: query
           required: false
@@ -117,7 +121,7 @@ paths:
             default: 10
       responses:
         "200":
-          description: Lista paginada de carteiras
+          description: Lista paginada de cartões
           content:
             application/json:
               schema:
@@ -126,64 +130,56 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Wallet"
+                      $ref: "#/components/schemas/CreditCard"
                   total_count:
                     type: integer
                   total_pages:
                     type: integer
+        "422":
+          description: Saldo de crédito não encontrado (não enviado, inexistente ou sem acesso)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
-      tags: [Wallets]
-      summary: Criar carteira
-      description: Cria uma carteira com o usuário autenticado como dono. O vínculo do dono (`user_wallet` aceito) é criado automaticamente.
+      tags: [Credit Cards]
+      summary: Criar cartão
+      description: Cria um cartão num saldo de crédito (`credit_balance_id` na query ou dentro de `credit_card`).
+      parameters:
+        - name: credit_balance_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Saldo de crédito alvo (alternativa a enviar dentro de `credit_card`)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/WalletInput"
+              $ref: "#/components/schemas/CreditCardInput"
       responses:
         "201":
-          description: Carteira criada com sucesso
+          description: Cartão criado com sucesso
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   data:
-                    $ref: "#/components/schemas/Wallet"
+                    $ref: "#/components/schemas/CreditCard"
         "422":
-          description: Dados inválidos
+          description: Saldo de crédito não encontrado ou dados inválidos
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /wallets/main:
+  /credit_cards/{id}:
     get:
-      tags: [Wallets]
-      summary: Obter carteira principal
-      description: Retorna a carteira principal (`main_user_wallet`) do usuário autenticado.
-      responses:
-        "200":
-          description: Carteira principal
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: "#/components/schemas/Wallet"
-        "422":
-          description: Carteira principal não encontrada
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /wallets/{id}:
-    get:
-      tags: [Wallets]
-      summary: Obter carteira
+      tags: [Credit Cards]
+      summary: Obter cartão
       parameters:
         - name: id
           in: path
@@ -193,24 +189,23 @@ paths:
             format: uuid
       responses:
         "200":
-          description: Dados da carteira
+          description: Dados do cartão
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   data:
-                    $ref: "#/components/schemas/Wallet"
+                    $ref: "#/components/schemas/CreditCard"
         "422":
-          description: Carteira não encontrada (inexistente ou sem acesso)
+          description: Cartão não encontrado (inexistente ou sem acesso)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
     patch:
-      tags: [Wallets]
-      summary: Atualizar carteira
-      description: Apenas o dono da carteira pode atualizar.
+      tags: [Credit Cards]
+      summary: Atualizar cartão
       parameters:
         - name: id
           in: path
@@ -223,33 +218,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/WalletInput"
+              $ref: "#/components/schemas/CreditCardInput"
       responses:
         "200":
-          description: Carteira atualizada
+          description: Cartão atualizado
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   data:
-                    $ref: "#/components/schemas/Wallet"
-        "403":
-          description: Usuário não é o dono da carteira
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                    $ref: "#/components/schemas/CreditCard"
         "422":
-          description: Carteira não encontrada ou dados inválidos
+          description: Cartão não encontrado ou dados inválidos
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
     delete:
-      tags: [Wallets]
-      summary: Remover carteira (soft delete)
-      description: Apenas o dono da carteira pode remover. A exclusão é lógica (`discarded_at`).
+      tags: [Credit Cards]
+      summary: Remover cartão (soft delete)
       parameters:
         - name: id
           in: path
@@ -259,19 +247,13 @@ paths:
             format: uuid
       responses:
         "200":
-          description: Carteira removida com sucesso
+          description: Cartão removido com sucesso
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
-        "403":
-          description: Usuário não é o dono da carteira
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
         "422":
-          description: Carteira não encontrada
+          description: Cartão não encontrado
           content:
             application/json:
               schema:

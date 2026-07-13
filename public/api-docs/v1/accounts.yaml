@@ -1,7 +1,7 @@
 openapi: "3.0.3"
 
 info:
-  title: My Finance API — Wallets
+  title: My Finance API — Accounts
   version: "1.0.0"
   description: |
     API REST do My Finance.
@@ -13,8 +13,8 @@ servers:
     description: Backend atual (mesma origem desta documentação)
 
 tags:
-  - name: Wallets
-    description: Carteiras financeiras — acessíveis via vínculo aceito (`user_wallets`); ações de dono exigem `owner_id` igual ao usuário autenticado
+  - name: Accounts
+    description: Contas de uma carteira (banco ou carteira física). O saldo é derivado das transações efetivadas.
 
 components:
   securitySchemes:
@@ -28,7 +28,7 @@ components:
       name: X-API-Key
 
   schemas:
-    Wallet:
+    Account:
       type: object
       properties:
         id:
@@ -36,18 +36,25 @@ components:
           format: uuid
         name:
           type: string
-          example: "Minha Carteira"
-        owner_id:
+          example: "Nubank"
+        kind:
+          type: string
+          enum: [checking, savings, cash]
+        translated_kind:
+          type: string
+          description: Label traduzido do enum `kind`
+          example: "Dinheiro"
+        initial_balance:
+          type: integer
+          description: Saldo de abertura em centavos
+          example: 0
+        balance:
+          type: integer
+          description: Saldo efetivado (initial_balance + depósitos - saques efetivados), em centavos
+          example: 475000
+        wallet_id:
           type: string
           format: uuid
-        total:
-          type: integer
-          description: Saldo efetivado em centavos (só transações efetivadas das contas)
-          example: 475000
-        total_projected:
-          type: integer
-          description: Saldo previsto em centavos (efetivadas + pendentes das contas)
-          example: 455000
         discarded_at:
           type: string
           format: date-time
@@ -59,17 +66,24 @@ components:
           type: string
           format: date-time
 
-    WalletInput:
+    AccountInput:
       type: object
-      required: [wallet]
+      required: [account]
       properties:
-        wallet:
+        account:
           type: object
           required: [name]
           properties:
             name:
               type: string
-              example: "Viagem"
+              example: "Inter"
+            kind:
+              type: string
+              enum: [checking, savings, cash]
+            initial_balance:
+              type: integer
+              description: Saldo de abertura em centavos
+              example: 10000
 
     ErrorResponse:
       type: object
@@ -91,12 +105,18 @@ security:
 
 paths:
 
-  /wallets:
+  /accounts:
     get:
-      tags: [Wallets]
-      summary: Listar carteiras acessíveis
-      description: Retorna as carteiras que o usuário autenticado pode acessar (vínculo aceito), paginadas.
+      tags: [Accounts]
+      summary: Listar contas de uma carteira
+      description: Retorna as contas da carteira paginadas, cada uma com seu saldo efetivado.
       parameters:
+        - name: wallet_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
         - name: terms
           in: query
           required: false
@@ -117,7 +137,7 @@ paths:
             default: 10
       responses:
         "200":
-          description: Lista paginada de carteiras
+          description: Lista paginada de contas
           content:
             application/json:
               schema:
@@ -126,130 +146,56 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Wallet"
+                      $ref: "#/components/schemas/Account"
                   total_count:
                     type: integer
                   total_pages:
                     type: integer
+        "422":
+          description: Carteira não encontrada (não enviada, inexistente ou sem acesso)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
-      tags: [Wallets]
-      summary: Criar carteira
-      description: Cria uma carteira com o usuário autenticado como dono. O vínculo do dono (`user_wallet` aceito) é criado automaticamente.
+      tags: [Accounts]
+      summary: Criar conta
+      description: Cria uma conta na carteira (`wallet_id` na query ou dentro de `account`).
+      parameters:
+        - name: wallet_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Carteira alvo (alternativa a enviar dentro de `account`)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/WalletInput"
+              $ref: "#/components/schemas/AccountInput"
       responses:
         "201":
-          description: Carteira criada com sucesso
+          description: Conta criada com sucesso
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   data:
-                    $ref: "#/components/schemas/Wallet"
-        "422":
-          description: Dados inválidos
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /wallets/main:
-    get:
-      tags: [Wallets]
-      summary: Obter carteira principal
-      description: Retorna a carteira principal (`main_user_wallet`) do usuário autenticado.
-      responses:
-        "200":
-          description: Carteira principal
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: "#/components/schemas/Wallet"
-        "422":
-          description: Carteira principal não encontrada
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /wallets/{id}:
-    get:
-      tags: [Wallets]
-      summary: Obter carteira
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Dados da carteira
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: "#/components/schemas/Wallet"
-        "422":
-          description: Carteira não encontrada (inexistente ou sem acesso)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-    patch:
-      tags: [Wallets]
-      summary: Atualizar carteira
-      description: Apenas o dono da carteira pode atualizar.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/WalletInput"
-      responses:
-        "200":
-          description: Carteira atualizada
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: "#/components/schemas/Wallet"
-        "403":
-          description: Usuário não é o dono da carteira
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                    $ref: "#/components/schemas/Account"
         "422":
           description: Carteira não encontrada ou dados inválidos
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-    delete:
-      tags: [Wallets]
-      summary: Remover carteira (soft delete)
-      description: Apenas o dono da carteira pode remover. A exclusão é lógica (`discarded_at`).
+
+  /accounts/{id}:
+    get:
+      tags: [Accounts]
+      summary: Obter conta
       parameters:
         - name: id
           in: path
@@ -259,19 +205,71 @@ paths:
             format: uuid
       responses:
         "200":
-          description: Carteira removida com sucesso
+          description: Dados da conta
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MessageResponse"
-        "403":
-          description: Usuário não é o dono da carteira
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Account"
+        "422":
+          description: Conta não encontrada (inexistente ou sem acesso)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      tags: [Accounts]
+      summary: Atualizar conta
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountInput"
+      responses:
+        "200":
+          description: Conta atualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Account"
         "422":
-          description: Carteira não encontrada
+          description: Conta não encontrada ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      tags: [Accounts]
+      summary: Remover conta (soft delete)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Conta removida com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "422":
+          description: Conta não encontrada
           content:
             application/json:
               schema:

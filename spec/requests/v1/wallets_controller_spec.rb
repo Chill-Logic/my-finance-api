@@ -11,7 +11,10 @@ RSpec.describe V1::WalletsController, type: :request do
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body["data"].map { |wallet| wallet["id"] }).to match_array([wallets(:gabriel_main).id, wallets(:shared).id, wallets(:casa).id])
-      expect(body["data"].find { |wallet| wallet["id"] == wallets(:gabriel_main).id }["total"]).to eq(475000)
+      gabriel_main = body["data"].find { |wallet| wallet["id"] == wallets(:gabriel_main).id }
+      expect(gabriel_main["total"]).to eq(475000)
+      # previsto = efetivado (475000) menos a conta pendente de luz (20000); rascunho fora
+      expect(gabriel_main["total_projected"]).to eq(455000)
       expect(body).to have_key("total_count")
       expect(body).to have_key("total_pages")
     end
