@@ -12,8 +12,12 @@ class V1::TransactionsController < ApplicationController
 
     @transactions = search_bar(@transactions, params[:terms], ["transactions.description"])
     @transactions = @transactions.order(transaction_date: :desc, created_at: :desc)
-    @transactions = paginate(@transactions, params[:page], params[:per_page], total_settled: total_settled, total_projected: total_projected)
-    render json: @transactions, status: :ok
+    render json: {
+      data: @transactions,
+      total_count: @transactions.count,
+      total_settled: total_settled,
+      total_projected: total_projected
+    }, status: :ok
   end
 
   def show

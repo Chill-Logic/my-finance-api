@@ -212,21 +212,9 @@ paths:
           schema:
             type: string
           description: Busca textual por descrição (insensível a acentos)
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: per_page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 10
       responses:
         "200":
-          description: Lista paginada de transações do mês com os totais efetivado e previsto
+          description: Lista completa das transações do mês (sem paginação) com os totais efetivado e previsto
           content:
             application/json:
               schema:
@@ -238,8 +226,7 @@ paths:
                       $ref: "#/components/schemas/Transaction"
                   total_count:
                     type: integer
-                  total_pages:
-                    type: integer
+                    description: Quantidade de transações do mês
                   total_settled:
                     type: integer
                     description: Saldo efetivado do mês em centavos (só transações com settled_at)

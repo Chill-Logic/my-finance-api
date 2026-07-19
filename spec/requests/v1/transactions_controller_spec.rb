@@ -15,8 +15,8 @@ RSpec.describe V1::TransactionsController, type: :request do
       expect(body["total_settled"]).to eq(465000)
       # inclui a pendente (-20000); rascunho continua fora
       expect(body["total_projected"]).to eq(445000)
-      expect(body).to have_key("total_count")
-      expect(body).to have_key("total_pages")
+      expect(body["total_count"]).to eq(4)
+      expect(body).not_to have_key("total_pages")
     end
 
     it "aceita o parâmetro reference no formato YYYY-MM" do
