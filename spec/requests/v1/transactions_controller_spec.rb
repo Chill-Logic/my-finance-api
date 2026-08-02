@@ -6,15 +6,15 @@ RSpec.describe V1::TransactionsController, type: :request do
   include RequestHelper
 
   describe "GET #index" do
-    it "retorna as transações da carteira paginadas com o saldo" do
+    it "retorna as transações da carteira com o saldo" do
       make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id })
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body["data"].length).to eq(3)
       expect(body["data"].first["id"]).to eq(transactions(:market).id)
       expect(body["total"]).to eq(475000)
-      expect(body).to have_key("total_count")
-      expect(body).to have_key("total_pages")
+      expect(body["total_count"]).to eq(3)
+      expect(body).not_to have_key("total_pages")
     end
 
     it "filtra as transações por período" do

@@ -122,7 +122,7 @@ paths:
     get:
       tags: [Transactions]
       summary: Listar transações de uma carteira
-      description: Retorna as transações da carteira paginadas (ordenadas por data decrescente) e o saldo do período filtrado em `total`. Datas não parseáveis em `start_date`/`end_date` são ignoradas.
+      description: Retorna todas as transações da carteira (ordenadas por data decrescente, sem paginação) e o saldo do período filtrado em `total`. Datas não parseáveis em `start_date`/`end_date` são ignoradas.
       parameters:
         - name: wallet_id
           in: query
@@ -155,21 +155,9 @@ paths:
           schema:
             type: string
           description: Busca textual por descrição (insensível a acentos)
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: per_page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 10
       responses:
         "200":
-          description: Lista paginada de transações com o saldo do período
+          description: Lista completa das transações (sem paginação) com o saldo do período
           content:
             application/json:
               schema:
@@ -181,8 +169,7 @@ paths:
                       $ref: "#/components/schemas/Transaction"
                   total_count:
                     type: integer
-                  total_pages:
-                    type: integer
+                    description: Quantidade de transações retornadas
                   total:
                     type: integer
                     description: Saldo do período em centavos (depósitos - saques)
