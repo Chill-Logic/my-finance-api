@@ -80,7 +80,7 @@ Respostas em JSON seguem o envelope `{ data: ... }` para sucesso e `{ message: "
 ## Autenticação e autorização
 
 - Todas as requisições exigem o token fixo da API no header `X-API-Key`.
-- Login via `POST /v1/auth/sign_in` — retorna JWT (expiração de 7 dias).
+- Login via `POST /v1/auth/sign_in` — retorna JWT (sem expiração).
 - Demais endpoints exigem o JWT no header `Authorization: Bearer`.
 - Fluxo no `ApplicationController`: `authenticate_fixed_token!` → `authenticate_user!` (popula `@current_user`). O encode/decode do JWT vive no concern `app/controllers/concerns/json_web_token.rb`.
 - Erros de JWT (`ExceptionHandler::DecodeError`, `ExceptionHandler::ExpiredSignature`) têm rescue automático no `ExceptionHandler` e viram resposta JSON 401.

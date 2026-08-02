@@ -11,7 +11,7 @@ info:
     ```
     X-API-Key: <token>
     ```
-    Após o login, inclua também o JWT (expiração de 7 dias) nas requisições autenticadas:
+    Após o login, inclua também o JWT (sem expiração) nas requisições autenticadas:
     ```
     Authorization: Bearer <token>
     ```
@@ -99,7 +99,7 @@ paths:
     post:
       tags: [Auth]
       summary: Login
-      description: Autentica o usuário com email e senha e retorna o JWT de acesso (expiração de 7 dias). O Swagger UI aplica o token retornado automaticamente no Authorize.
+      description: Autentica o usuário com email e senha e retorna o JWT de acesso (sem expiração). O Swagger UI aplica o token retornado automaticamente no Authorize.
       security:
         - apiKeyAuth: []
       requestBody:
