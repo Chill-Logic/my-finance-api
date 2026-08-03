@@ -1,0 +1,23 @@
+gabriel_main_account:
+  name: Conta principal
+  kind: cash
+  initial_balance: 0
+  wallet: gabriel_main
+
+maria_main_account:
+  name: Conta principal
+  kind: cash
+  initial_balance: 0
+  wallet: maria_main
+
+shared_account:
+  name: Conta compartilhada
+  kind: checking
+  initial_balance: 0
+  wallet: shared
+
+casa_account:
+  name: Conta da casa
+  kind: checking
+  initial_balance: 0
+  wallet: casa

@@ -1,0 +1,486 @@
+openapi: "3.0.3"
+
+info:
+  title: My Finance API — Credit Balances
+  version: "1.0.0"
+  description: |
+    API REST do My Finance.
+    ## Autenticação
+    X-API-Key: <token> + Authorization: Bearer <token>
+
+servers:
+  - url: /v1
+    description: Backend atual (mesma origem desta documentação)
+
+tags:
+  - name: Credit Balances
+    description: Saldos de crédito (limite compartilhável entre vários cartões) de uma carteira. A fatura é sempre calculada pelo intervalo do ciclo (fechamento a fechamento).
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Invoice:
+      type: object
+      description: Fatura calculada do ciclo atual (não é um registro persistido)
+      properties:
+        amount:
+          type: integer
+          description: Valor total do ciclo em centavos (compras - estornos)
+        paid_amount:
+          type: integer
+          description: Soma dos pagamentos efetivados lançados para esta fatura, em centavos
+        remaining:
+          type: integer
+          description: Saldo restante a pagar (amount - paid_amount, nunca negativo), em centavos
+        cycle_start:
+          type: string
+          format: date-time
+        cycle_end:
+          type: string
+          format: date-time
+        due_date:
+          type: string
+          format: date
+        paid:
+          type: boolean
+          description: True quando a fatura foi totalmente quitada (remaining = 0 com amount > 0)
+
+    CreditBalance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Nubank"
+        credit_limit:
+          type: integer
+          description: Limite em centavos
+          example: 1000000
+        closing_day:
+          type: integer
+          description: Dia de fechamento da fatura
+          example: 3
+        due_day:
+          type: integer
+          description: Dia de vencimento da fatura
+          example: 10
+        used:
+          type: integer
+          description: Valor usado no ciclo atual, em centavos
+        available:
+          type: integer
+          description: Limite disponível (credit_limit - used), em centavos
+        current_invoice:
+          allOf:
+            - $ref: "#/components/schemas/Invoice"
+          description: >
+            Fatura a pagar — a fatura em aberto (não quitada) com vencimento mais antigo. Se todas
+            estiverem pagas, cai na faturada no mês atual. Já `used`/`available` refletem o ciclo aberto atual.
+        wallet_id:
+          type: string
+          format: uuid
+        discarded_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreditBalanceInput:
+      type: object
+      required: [credit_balance]
+      properties:
+        credit_balance:
+          type: object
+          required: [name, credit_limit, closing_day, due_day]
+          properties:
+            name:
+              type: string
+              example: "Nubank"
+            credit_limit:
+              type: integer
+              example: 1000000
+            closing_day:
+              type: integer
+              example: 3
+            due_day:
+              type: integer
+              example: 10
+
+    PaymentTransaction:
+      type: object
+      description: Saque de pagamento de fatura criado na conta pagadora (mesmo formato do recurso Transaction)
+      properties:
+        id:
+          type: string
+          format: uuid
+        description:
+          type: string
+          example: "Fatura Nubank"
+        value:
+          type: integer
+          description: Valor pago em centavos (total ou parcial)
+        kind:
+          type: string
+          example: withdraw
+        transaction_date:
+          type: string
+          format: date-time
+          description: Vencimento do ciclo pago (amarra o pagamento à fatura)
+        settled_at:
+          type: string
+          format: date-time
+          description: Data em que a fatura foi paga — define o mês em que o saque aparece na listagem
+        source_type:
+          type: string
+          example: Account
+        source_id:
+          type: string
+          format: uuid
+        paid_credit_balance_id:
+          type: string
+          format: uuid
+          description: Saldo de crédito cuja fatura foi paga
+        wallet_id:
+          type: string
+          format: uuid
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Mensagem de erro"
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Operação realizada com sucesso!"
+
+security:
+  - bearerAuth: []
+    apiKeyAuth: []
+
+paths:
+
+  /credit_balances:
+    get:
+      tags: [Credit Balances]
+      summary: Listar saldos de crédito de uma carteira
+      parameters:
+        - name: wallet_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: terms
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Busca textual por nome (insensível a acentos)
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Lista paginada de saldos de crédito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CreditBalance"
+                  total_count:
+                    type: integer
+                  total_pages:
+                    type: integer
+        "422":
+          description: Carteira não encontrada (não enviada, inexistente ou sem acesso)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags: [Credit Balances]
+      summary: Criar saldo de crédito
+      parameters:
+        - name: wallet_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Carteira alvo (alternativa a enviar dentro de `credit_balance`)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditBalanceInput"
+      responses:
+        "201":
+          description: Saldo de crédito criado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreditBalance"
+        "422":
+          description: Carteira não encontrada ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /credit_balances/{id}:
+    get:
+      tags: [Credit Balances]
+      summary: Obter saldo de crédito
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Dados do saldo de crédito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreditBalance"
+        "422":
+          description: Saldo de crédito não encontrado (inexistente ou sem acesso)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      tags: [Credit Balances]
+      summary: Atualizar saldo de crédito
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditBalanceInput"
+      responses:
+        "200":
+          description: Saldo de crédito atualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreditBalance"
+        "422":
+          description: Saldo de crédito não encontrado ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      tags: [Credit Balances]
+      summary: Remover saldo de crédito (soft delete)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Saldo de crédito removido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "422":
+          description: Saldo de crédito não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /credit_balances/{id}/invoice:
+    get:
+      tags: [Credit Balances]
+      summary: Fatura calculada de um ciclo
+      description: >
+        Retorna a fatura (calculada, não persistida) — soma das compras entre fechamentos (`amount`),
+        com `due_date`, o total já pago (`paid_amount`), o saldo restante (`remaining`) e `paid` (true
+        quando quitada). O ciclo pode ser referenciado **por mês** (`reference` "YYYY-MM" ou
+        `month`+`year`) — nesse caso retorna a fatura **faturada naquele mês**, ou seja, o **ciclo
+        anterior** (o que se paga no mês), exatamente o mesmo que aparece na aba Cartões do index de
+        transactions — ou **por data** (`date`, o ciclo de gasto que contém aquele dia, sem deslocamento).
+        Sem nenhum parâmetro, retorna a **fatura em aberto com vencimento mais antigo** (a que se paga
+        primeiro) — o mesmo que o `current_invoice` do saldo de crédito. Se não houver nenhuma em aberto,
+        cai na fatura faturada no mês atual.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: reference
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "2026-08"
+          description: Mês do ciclo no formato YYYY-MM (mesmo ciclo do index). Alternativa a month/year e a date.
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+          description: Mês do ciclo (junto com year)
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          example: "2026-08-15"
+          description: Qualquer data dentro do ciclo desejado (usado quando reference/month não vêm; default - hoje)
+      responses:
+        "200":
+          description: Fatura do ciclo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Invoice"
+        "422":
+          description: Saldo de crédito não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /credit_balances/{id}/pay_invoice:
+    post:
+      tags: [Credit Balances]
+      summary: Pagar fatura (total, parcial ou repetido)
+      description: >
+        Cria um saque efetivado real na conta pagadora informada (`account_id`) como pagamento da fatura
+        do ciclo. Sem `value`, paga o saldo restante; com `value`, lança um pagamento parcial. A mesma
+        fatura pode ser paga mais de uma vez — os pagamentos somam em `paid_amount`, inclusive acima do
+        total (paga a mais). O saque passa a compor o saldo da conta. Recusa se não há valor em aberto no
+        ciclo, ou se a fatura já está quitada e nenhum `value` explícito for informado.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [account_id]
+              properties:
+                account_id:
+                  type: string
+                  format: uuid
+                  description: Conta pagadora (deve ser acessível ao usuário)
+                value:
+                  type: integer
+                  description: Valor do pagamento em centavos (default - saldo restante da fatura). Pode exceder o restante (paga a mais).
+                reference:
+                  type: string
+                  example: "2026-08"
+                  description: Mês do ciclo a pagar no formato YYYY-MM (mesmo ciclo do index). Alternativa a month/year e date.
+                month:
+                  type: integer
+                  description: Mês do ciclo a pagar (junto com year)
+                year:
+                  type: integer
+                date:
+                  type: string
+                  format: date
+                  description: Qualquer data dentro do ciclo a pagar (usado quando reference/month não vêm; default - hoje)
+                settled_at:
+                  type: string
+                  format: date-time
+                  description: >
+                    Data/hora do pagamento (default - agora). Define o mês em que o saque aparece
+                    na listagem; o transaction_date do saque fica no vencimento da fatura.
+                description:
+                  type: string
+                  description: Descrição do saque (default - "Fatura <nome>")
+      responses:
+        "201":
+          description: Fatura paga (saque criado na conta), total ou parcialmente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentTransaction"
+        "422":
+          description: Conta pagadora não encontrada, sem valor em aberto no ciclo, ou fatura já quitada sem `value` explícito
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"

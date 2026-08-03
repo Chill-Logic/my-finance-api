@@ -11,7 +11,10 @@ RSpec.describe V1::WalletsController, type: :request do
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body["data"].map { |wallet| wallet["id"] }).to match_array([wallets(:gabriel_main).id, wallets(:shared).id, wallets(:casa).id])
-      expect(body["data"].find { |wallet| wallet["id"] == wallets(:gabriel_main).id }["total"]).to eq(475000)
+      gabriel_main = body["data"].find { |wallet| wallet["id"] == wallets(:gabriel_main).id }
+      expect(gabriel_main["total"]).to eq(475000)
+      # previsto = efetivado (475000) menos a conta pendente de luz (20000); rascunho fora
+      expect(gabriel_main["total_projected"]).to eq(455000)
       expect(body).to have_key("total_count")
       expect(body).to have_key("total_pages")
     end
@@ -102,6 +105,15 @@ RSpec.describe V1::WalletsController, type: :request do
     it "bloqueia a remoção por quem não é dono" do
       make_request(endpoint: v1_wallets_path + "/#{wallets(:casa).id}", token: user_token, method: :delete)
       expect(response).to have_http_status(:forbidden)
+    end
+
+    it "reaponta a carteira principal de quem a usava ao remover a carteira" do
+      users(:gabriel).update_column(:main_user_wallet_id, user_wallets(:gabriel_shared).id)
+
+      make_request(endpoint: v1_wallets_path + "/#{wallets(:shared).id}", token: user_token, method: :delete)
+
+      expect(response).to have_http_status(:ok)
+      expect(users(:gabriel).reload.main_user_wallet_id).to eq(user_wallets(:gabriel_main).id)
     end
   end
 end

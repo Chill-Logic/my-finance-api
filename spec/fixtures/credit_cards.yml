@@ -1,0 +1,9 @@
+gabriel_nubank_fisico:
+  name: Físico
+  last_digits: "1234"
+  credit_balance: gabriel_nubank
+
+gabriel_nubank_virtual:
+  name: Virtual
+  last_digits: "5678"
+  credit_balance: gabriel_nubank

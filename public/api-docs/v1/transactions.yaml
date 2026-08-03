@@ -51,9 +51,41 @@ components:
         transaction_date:
           type: string
           format: date-time
+          description: Data nominal/vencimento da transação (quando ela deveria acontecer)
+        settled_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: >
+            Efetivado em (recebido/pago). Nulo = pendente. É o que define o mês em que a
+            transação aparece na listagem; enquanto pendente, usa-se o transaction_date.
+            Transações de crédito (origem CreditBalance) são efetivadas automaticamente com
+            settled_at = transaction_date, já que o que importa é o pagamento da fatura.
+        draft:
+          type: boolean
+          description: Rascunho — quando true, é ignorada de todos os totais
+        source_type:
+          type: string
+          enum: [Account, CreditBalance]
+          description: Tipo da origem polimórfica
+        source_id:
+          type: string
+          format: uuid
+          description: ID da conta ou saldo de crédito de origem
+        credit_card_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Cartão do saldo de crédito (só quando a origem é um CreditBalance)
+        paid_credit_balance_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Preenchido quando o saque é o pagamento da fatura desse saldo de crédito
         wallet_id:
           type: string
           format: uuid
+          description: Derivado automaticamente da origem
         user_id:
           type: string
           format: uuid
@@ -71,6 +103,24 @@ components:
         updated_at:
           type: string
           format: date-time
+
+    TransactionGroup:
+      type: object
+      description: Visão de uma origem (Conta ou Cartões) — lista e totais próprios
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        total_count:
+          type: integer
+          description: Quantidade de transações do grupo no mês
+        total_settled:
+          type: integer
+          description: Saldo efetivado do grupo em centavos (só transações com settled_at)
+        total_projected:
+          type: integer
+          description: Saldo previsto do grupo em centavos (efetivadas + pendentes)
 
     TransactionInput:
       type: object
@@ -93,10 +143,21 @@ components:
               type: string
               format: date-time
               description: Aceita data simples (ex - "2026-07-06"), interpretada como meia-noite no fuso da aplicação (Brasília)
-            wallet_id:
+            source_type:
+              type: string
+              enum: [Account, CreditBalance]
+              description: Obrigatório no create — tipo da origem
+            source_id:
               type: string
               format: uuid
-              description: Obrigatório no create; ignorado no update
+              description: Obrigatório no create — ID da conta/saldo de crédito. A carteira é derivada dele.
+            credit_card_id:
+              type: string
+              format: uuid
+              description: Opcional — cartão do saldo de crédito (deve pertencer ao CreditBalance de origem)
+            draft:
+              type: boolean
+              description: Marca a transação como rascunho (ignorada dos totais)
 
     ErrorResponse:
       type: object
@@ -121,8 +182,26 @@ paths:
   /transactions:
     get:
       tags: [Transactions]
-      summary: Listar transações de uma carteira
-      description: Retorna todas as transações da carteira (ordenadas por data decrescente, sem paginação) e o saldo do período filtrado em `total`. Datas não parseáveis em `start_date`/`end_date` são ignoradas.
+      summary: Listar transações do mês de uma carteira (Conta e Cartões)
+      description: >
+        Retorna as transações do mês de referência divididas em duas visões: `accounts` (origem
+        `Account`) e `credits` (origem `CreditBalance`). Cada visão traz sua própria lista `data`
+        (ordenada por data decrescente) e seus totais `total_settled` (só efetivadas) e
+        `total_projected` (efetivadas + pendentes) — ambos ignoram rascunhos (`draft`). Separar as
+        visões evita a dupla contagem do cartão (o pagamento da fatura conta só em `accounts` e as
+        compras só em `credits`). O mês vem de `month`+`year` ou de `reference` ("YYYY-MM"); sem
+        parâmetros, usa o mês atual (fuso de Brasília). As duas visões usam janelas diferentes: em
+        `accounts` o bucket é o mês-calendário, seguindo o `settled_at` quando a transação já foi
+        efetivada (aparece no mês em que foi paga/recebida) e o `transaction_date` (vencimento)
+        enquanto pendente; em `credits` o bucket é o **ciclo da fatura faturada naquele mês** de cada
+        saldo de crédito, ou seja, o **ciclo anterior** (o que você paga no mês, referente ao período
+        passado) — não o ciclo aberto em que ainda se gasta. O ciclo "de gasto" do mês M vai de um
+        fechamento ao próximo e depende de `due_day` vs `closing_day`: quando `due_day < closing_day`
+        (fatura vence no mês seguinte ao fechamento) fecha no próprio M
+        (`[fechamento(M-1)+1 .. fechamento(M)]`), caso contrário fecha no mês seguinte
+        (`[fechamento(M)+1 .. fechamento(M+1)]`); e o que aparece em `credits` do mês M é esse ciclo
+        calculado para **M-1**. É o mesmo ciclo usado por `GET /credit_balances/{id}/invoice` (por mês)
+        e pelo `current_invoice` do saldo de crédito. Rascunhos aparecem na lista, mas ficam fora dos totais.
       parameters:
         - name: wallet_id
           in: query
@@ -130,25 +209,40 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: start_date
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+          example: 7
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+          example: 2026
+        - name: reference
           in: query
           required: false
           schema:
             type: string
-            format: date
-        - name: end_date
+          example: "2026-07"
+          description: Mês de referência no formato YYYY-MM (alternativa a month/year)
+        - name: source_type
           in: query
           required: false
           schema:
             type: string
-            format: date
-        - name: timezone
+            enum: [Account, CreditBalance]
+          description: Filtra por origem (junto com source_id)
+        - name: source_id
           in: query
           required: false
           schema:
             type: string
-          example: America/New_York
-          description: Timezone (nome IANA) usado para os limites de dia de `start_date`/`end_date`. Ausente ou inválido usa o fuso da aplicação (Brasília).
+            format: uuid
         - name: terms
           in: query
           required: false
@@ -157,22 +251,16 @@ paths:
           description: Busca textual por descrição (insensível a acentos)
       responses:
         "200":
-          description: Lista completa das transações (sem paginação) com o saldo do período
+          description: Transações do mês (sem paginação) separadas em Conta e Cartões, cada uma com seus totais
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Transaction"
-                  total_count:
-                    type: integer
-                    description: Quantidade de transações retornadas
-                  total:
-                    type: integer
-                    description: Saldo do período em centavos (depósitos - saques)
+                  accounts:
+                    $ref: "#/components/schemas/TransactionGroup"
+                  credits:
+                    $ref: "#/components/schemas/TransactionGroup"
         "422":
           description: Carteira não encontrada (não enviada, inexistente ou sem acesso)
           content:
@@ -182,7 +270,7 @@ paths:
     post:
       tags: [Transactions]
       summary: Criar transação
-      description: Cria uma transação na carteira (`wallet_id` dentro de `transaction`), vinculada ao usuário autenticado.
+      description: Cria uma transação numa origem (`source_type`/`source_id`, uma conta ou saldo de crédito), vinculada ao usuário autenticado. A carteira é derivada da origem.
       requestBody:
         required: true
         content:
@@ -195,7 +283,8 @@ paths:
                 value: 150000
                 kind: withdraw
                 transaction_date: "2026-07-06"
-                wallet_id: "00000000-0000-0000-0000-000000000000"
+                source_type: Account
+                source_id: "00000000-0000-0000-0000-000000000000"
       responses:
         "201":
           description: Transação criada com sucesso
@@ -207,7 +296,7 @@ paths:
                   data:
                     $ref: "#/components/schemas/Transaction"
         "422":
-          description: Carteira não encontrada ou dados inválidos
+          description: Origem não encontrada ou dados inválidos
           content:
             application/json:
               schema:
@@ -289,6 +378,75 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
+        "422":
+          description: Transação não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /transactions/{id}/settle:
+    post:
+      tags: [Transactions]
+      summary: Efetivar transação
+      description: Marca a transação como efetivada ("efetivado em"). Aceita `settled_at` opcional; sem ele, usa o instante atual.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                settled_at:
+                  type: string
+                  format: date-time
+                  description: Data/hora da efetivação (default - agora)
+      responses:
+        "200":
+          description: Transação efetivada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Transaction"
+        "422":
+          description: Transação não encontrada ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /transactions/{id}/unsettle:
+    post:
+      tags: [Transactions]
+      summary: Desfazer efetivação
+      description: Volta a transação para pendente (limpa `settled_at`).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Efetivação desfeita
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Transaction"
         "422":
           description: Transação não encontrada
           content:

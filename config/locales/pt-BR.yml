@@ -31,6 +31,29 @@ pt-BR:
               blank: "não pode ficar em branco"
             transaction_date:
               blank: "não pode ficar em branco"
+            credit_card:
+              invalid: "não pertence ao saldo de crédito informado"
+
+        account:
+          attributes:
+            name:
+              blank: "não pode ficar em branco"
+
+        credit_balance:
+          attributes:
+            name:
+              blank: "não pode ficar em branco"
+            credit_limit:
+              blank: "não pode ficar em branco"
+            closing_day:
+              blank: "não pode ficar em branco"
+            due_day:
+              blank: "não pode ficar em branco"
+
+        credit_card:
+          attributes:
+            name:
+              blank: "não pode ficar em branco"
 
     attributes:
       user:
@@ -58,10 +81,40 @@ pt-BR:
         value: "Valor"
         kind: "Tipo"
         transaction_date: "Data da Transação"
+        settled_at: "Efetivado em"
+        draft: "Rascunho"
         wallet: "Carteira"
         wallet_id: "Carteira"
         user: "Usuário"
         user_id: "Usuário"
+        source: "Origem"
+        credit_card: "Cartão"
+        credit_card_id: "Cartão"
         kinds:
           deposit: "Depósito"
           withdraw: "Saque"
+
+      account:
+        name: "Nome"
+        kind: "Tipo"
+        initial_balance: "Saldo Inicial"
+        wallet: "Carteira"
+        wallet_id: "Carteira"
+        kinds:
+          checking: "Conta Corrente"
+          savings: "Poupança"
+          cash: "Dinheiro"
+
+      credit_balance:
+        name: "Nome"
+        credit_limit: "Limite"
+        closing_day: "Dia de Fechamento"
+        due_day: "Dia de Vencimento"
+        wallet: "Carteira"
+        wallet_id: "Carteira"
+
+      credit_card:
+        name: "Nome"
+        last_digits: "Últimos Dígitos"
+        credit_balance: "Saldo de Crédito"
+        credit_balance_id: "Saldo de Crédito"

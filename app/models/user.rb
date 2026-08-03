@@ -21,6 +21,13 @@ class User < ApplicationRecord
     self.update_columns(email: "#{DateTime.now.strftime("%Y%m%d%H%M")}#{self.email}")
   end
 
+  def reset_main_user_wallet!
+    fallback = user_wallets.accepted.joins(:wallet).where(wallets: { owner_id: id }).order("wallets.created_at").first ||
+               user_wallets.accepted.order(:created_at).first
+
+    update_column(:main_user_wallet_id, fallback&.id)
+  end
+
   private
 
   def create_default_wallet

@@ -100,6 +100,33 @@ RSpec.describe V1::UsersController, type: :request do
       expect(users(:gabriel).reload.valid_password?("123123")).to be(true)
     end
 
+    it "define a carteira principal a partir de uma carteira acessível" do
+      make_request(
+        endpoint: update_me_v1_users_path,
+        token: user_token,
+        method: :patch,
+        params: { user: { main_wallet_id: wallets(:shared).id } }
+      )
+
+      expect(response).to have_http_status(:ok)
+      body = JSON.parse(response.body)
+      expect(body["data"]["main_user_wallet_id"]).to eq(user_wallets(:gabriel_shared).id)
+      expect(users(:gabriel).reload.main_user_wallet_id).to eq(user_wallets(:gabriel_shared).id)
+    end
+
+    it "retorna erro ao definir carteira principal sem acesso aceito" do
+      make_request(
+        endpoint: update_me_v1_users_path,
+        token: user_token,
+        method: :patch,
+        params: { user: { main_wallet_id: wallets(:maria_main).id } }
+      )
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["message"]).to eq("Carteira não encontrada.")
+      expect(users(:gabriel).reload.main_user_wallet_id).to eq(user_wallets(:gabriel_main).id)
+    end
+
     it "retorna erro de validação para nome em branco" do
       make_request(
         endpoint: update_me_v1_users_path,

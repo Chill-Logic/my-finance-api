@@ -137,7 +137,8 @@ bundle exec rspec
 
 - **Toda feature nova ou alteração de endpoint deve vir acompanhada de: (1) request specs criados/atualizados cobrindo sucesso e erros, e (2) o YAML do Swagger correspondente em `public/api-docs/v1/` criado/atualizado (endpoint novo em arquivo novo também entra no `config/initializers/rswag_ui.rb`). A entrega só está completa com `bundle exec rspec` verde.**
 - Código em inglês (nomes de classes, métodos, variáveis, migrations, commits).
-- Comentários e mensagens de erro voltadas ao usuário podem ficar em pt-BR.
+- Mensagens de erro voltadas ao usuário podem ficar em pt-BR.
+- **Não comentar no meio do código** (dentro de método/bloco explicando o que a linha faz). O código deve ser autoexplicativo; se algo precisa de contexto, o nome do método/variável resolve. Comentários existentes em fixtures são exceção tolerada.
 
 ### Controllers
 
