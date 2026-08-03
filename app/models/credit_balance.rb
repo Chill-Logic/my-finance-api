@@ -26,6 +26,11 @@ class CreditBalance < ApplicationRecord
     cycle_start.in_time_zone.beginning_of_day..cycle_end.in_time_zone.end_of_day
   end
 
+  def billed_cycle_for_month(year, month)
+    ref = Date.new(year.to_i, month.to_i, 1).prev_month
+    cycle_for_month(ref.year, ref.month)
+  end
+
   def cycle_range(reference = Time.zone.today)
     reference = reference.to_date
     closing_this = closing_on(reference.year, reference.month)
@@ -52,11 +57,16 @@ class CreditBalance < ApplicationRecord
   end
 
   def current_invoice(reference = Time.zone.today)
+    ref = reference.to_date
+    invoice_for_month(ref.year, ref.month)
+  end
+
+  def invoice_on(reference = Time.zone.today)
     invoice_for_range(cycle_range(reference))
   end
 
   def invoice_for_month(year, month)
-    invoice_for_range(cycle_for_month(year, month))
+    invoice_for_range(billed_cycle_for_month(year, month))
   end
 
   def paid_amount(due_date)

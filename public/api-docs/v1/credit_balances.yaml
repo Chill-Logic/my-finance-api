@@ -82,7 +82,11 @@ components:
           type: integer
           description: Limite disponível (credit_limit - used), em centavos
         current_invoice:
-          $ref: "#/components/schemas/Invoice"
+          allOf:
+            - $ref: "#/components/schemas/Invoice"
+          description: >
+            Fatura a pagar — o último ciclo já fechado (referente ao período anterior), não o ciclo
+            aberto em que ainda se gasta. Já `used`/`available` refletem o ciclo aberto atual.
         wallet_id:
           type: string
           format: uuid
@@ -352,9 +356,11 @@ paths:
         Retorna a fatura (calculada, não persistida) — soma das compras entre fechamentos (`amount`),
         com `due_date`, o total já pago (`paid_amount`), o saldo restante (`remaining`) e `paid` (true
         quando quitada). O ciclo pode ser referenciado **por mês** (`reference` "YYYY-MM" ou
-        `month`+`year`) — nesse caso usa exatamente o mesmo ciclo da aba Cartões do index de transactions
-        (que depende de `due_day` vs `closing_day`) — ou **por data** (`date`, qualquer dia dentro do
-        ciclo). Sem nenhum parâmetro, usa o ciclo de hoje.
+        `month`+`year`) — nesse caso retorna a fatura **faturada naquele mês**, ou seja, o **ciclo
+        anterior** (o que se paga no mês), exatamente o mesmo que aparece na aba Cartões do index de
+        transactions — ou **por data** (`date`, o ciclo de gasto que contém aquele dia, sem deslocamento).
+        Sem nenhum parâmetro, retorna a fatura a pagar do mês atual (o mesmo que o `current_invoice` do
+        saldo de crédito) — nunca o ciclo aberto em que você ainda gasta.
       parameters:
         - name: id
           in: path

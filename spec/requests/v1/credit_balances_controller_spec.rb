@@ -32,6 +32,17 @@ RSpec.describe V1::CreditBalancesController, type: :request do
       expect(JSON.parse(response.body)["data"]["id"]).to eq(credit_balances(:gabriel_nubank).id)
     end
 
+    it "current_invoice mostra o ciclo já fechado (a fatura a pagar), não o ciclo aberto" do
+      # Em 15/09 o ciclo aberto do Nubank é [04/09..03/10] (vazio); a fatura a pagar
+      # é a que fechou 03/09 (compras de agosto), vence 10/09.
+      travel_to(Time.zone.local(2026, 9, 15)) do
+        make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}", token: user_token, method: :get)
+        invoice = JSON.parse(response.body)["data"]["current_invoice"]
+        expect(invoice["amount"]).to eq(350000)
+        expect(invoice["due_date"]).to eq("2026-09-10")
+      end
+    end
+
     it "retorna erro para saldo de crédito sem acesso" do
       make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:shared_credit).id}", token: second_user_token, method: :get)
       expect(response).to have_http_status(:unprocessable_content)
@@ -87,27 +98,27 @@ RSpec.describe V1::CreditBalancesController, type: :request do
       expect(body["data"]["paid"]).to eq(false)
     end
 
-    it "aceita reference YYYY-MM e usa o mesmo ciclo do index" do
-      # Nubank (fecha 3, vence 10): agosto = [04/08..03/09] = notebook + curso, igual ao index
-      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get, params: { reference: "2026-08" })
+    it "aceita reference YYYY-MM e fatura o ciclo do mês anterior, igual ao index" do
+      # Nubank (fecha 3, vence 10): setembro fatura o ciclo de agosto [04/08..03/09] = notebook + curso
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get, params: { reference: "2026-09" })
       body = JSON.parse(response.body)
       expect(body["data"]["amount"]).to eq(350000)
       expect(body["data"]["due_date"]).to eq("2026-09-10")
 
-      # Julho = [04/07..03/08] = só a compra pré-fechamento (02/08)
-      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get, params: { reference: "2026-07" })
+      # agosto fatura o ciclo de julho [04/07..03/08] = só a compra pré-fechamento (02/08)
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get, params: { reference: "2026-08" })
       expect(JSON.parse(response.body)["data"]["amount"]).to eq(12000)
     end
 
     it "respeita due_day < closing_day na fatura por mês (casa_card)" do
-      # casa_card fecha 25, vence 5: julho fecha no próprio mês → compra de 20/07
-      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:casa_card).id}/invoice", token: user_token, method: :get, params: { reference: "2026-07" })
+      # casa_card fecha 25, vence 5: agosto fatura o ciclo de julho [26/06..25/07] → compra de 20/07
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:casa_card).id}/invoice", token: user_token, method: :get, params: { reference: "2026-08" })
       body = JSON.parse(response.body)
       expect(body["data"]["amount"]).to eq(8000)
       expect(body["data"]["due_date"]).to eq("2026-08-05")
 
-      # agosto → compra de 28/07 (pós-fechamento)
-      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:casa_card).id}/invoice", token: user_token, method: :get, params: { reference: "2026-08" })
+      # setembro fatura o ciclo de agosto [26/07..25/08] → compra de 28/07 (pós-fechamento)
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:casa_card).id}/invoice", token: user_token, method: :get, params: { reference: "2026-09" })
       expect(JSON.parse(response.body)["data"]["amount"]).to eq(5000)
     end
   end

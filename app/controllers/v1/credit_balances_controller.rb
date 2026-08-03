@@ -68,8 +68,9 @@ class V1::CreditBalancesController < ApplicationController
   def resolved_invoice
     year, month = month_reference
     return @credit_balance.invoice_for_month(year, month) if year && month
+    return @credit_balance.invoice_on(invoice_reference) if params[:date].present?
 
-    @credit_balance.current_invoice(invoice_reference)
+    @credit_balance.current_invoice
   end
 
   def month_reference

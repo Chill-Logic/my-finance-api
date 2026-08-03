@@ -20,6 +20,7 @@ class Transaction < ApplicationRecord
   belongs_to :paid_credit_balance, class_name: "CreditBalance", optional: true
 
   before_validation :assign_wallet_from_source
+  before_save :settle_credit_source
 
   validates :description, presence: true
   validates :value, presence: true, numericality: { only_integer: true }
@@ -41,6 +42,10 @@ class Transaction < ApplicationRecord
 
   def assign_wallet_from_source
     self.wallet_id = source.wallet_id if source.present?
+  end
+
+  def settle_credit_source
+    self.settled_at = transaction_date if source_type == "CreditBalance"
   end
 
   def credit_card_matches_source

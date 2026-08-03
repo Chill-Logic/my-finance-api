@@ -59,6 +59,8 @@ components:
           description: >
             Efetivado em (recebido/pago). Nulo = pendente. É o que define o mês em que a
             transação aparece na listagem; enquanto pendente, usa-se o transaction_date.
+            Transações de crédito (origem CreditBalance) são efetivadas automaticamente com
+            settled_at = transaction_date, já que o que importa é o pagamento da fatura.
         draft:
           type: boolean
           description: Rascunho — quando true, é ignorada de todos os totais
@@ -191,13 +193,15 @@ paths:
         parâmetros, usa o mês atual (fuso de Brasília). As duas visões usam janelas diferentes: em
         `accounts` o bucket é o mês-calendário, seguindo o `settled_at` quando a transação já foi
         efetivada (aparece no mês em que foi paga/recebida) e o `transaction_date` (vencimento)
-        enquanto pendente; em `credits` o bucket é o **ciclo da fatura** de cada saldo de crédito
-        (de um fechamento ao próximo, por `transaction_date`), então cada cartão respeita seu próprio
-        dia de fechamento. A janela do ciclo depende de `due_day` vs `closing_day`: quando
-        `due_day < closing_day` (fatura vence no mês seguinte ao fechamento) o ciclo do mês M fecha no
-        próprio M (`[fechamento(M-1)+1 .. fechamento(M)]`); caso contrário fecha no mês seguinte
-        (`[fechamento(M)+1 .. fechamento(M+1)]`). É o mesmo ciclo usado por
-        `GET /credit_balances/{id}/invoice`. Rascunhos aparecem na lista, mas ficam fora dos totais.
+        enquanto pendente; em `credits` o bucket é o **ciclo da fatura faturada naquele mês** de cada
+        saldo de crédito, ou seja, o **ciclo anterior** (o que você paga no mês, referente ao período
+        passado) — não o ciclo aberto em que ainda se gasta. O ciclo "de gasto" do mês M vai de um
+        fechamento ao próximo e depende de `due_day` vs `closing_day`: quando `due_day < closing_day`
+        (fatura vence no mês seguinte ao fechamento) fecha no próprio M
+        (`[fechamento(M-1)+1 .. fechamento(M)]`), caso contrário fecha no mês seguinte
+        (`[fechamento(M)+1 .. fechamento(M+1)]`); e o que aparece em `credits` do mês M é esse ciclo
+        calculado para **M-1**. É o mesmo ciclo usado por `GET /credit_balances/{id}/invoice` (por mês)
+        e pelo `current_invoice` do saldo de crédito. Rascunhos aparecem na lista, mas ficam fora dos totais.
       parameters:
         - name: wallet_id
           in: query

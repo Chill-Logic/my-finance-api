@@ -19,35 +19,39 @@ RSpec.describe V1::TransactionsController, type: :request do
       # inclui a pendente (-20000); rascunho continua fora
       expect(body["accounts"]["total_projected"]).to eq(445000)
 
-      # Cartões: só a compra pré-fechamento (02/08 cai no ciclo de julho do Nubank)
-      expect(body["credits"]["data"].map { |transaction| transaction["id"] }).to match_array([transactions(:nubank_pre_fechamento).id])
-      expect(body["credits"]["total_count"]).to eq(1)
-      expect(body["credits"]["total_settled"]).to eq(-12000)
+      # Cartões: crédito mostra o ciclo faturado no mês (o anterior). Julho fatura o ciclo
+      # de junho do Nubank ([04/06..03/07]), que está vazio.
+      expect(body["credits"]["data"]).to eq([])
+      expect(body["credits"]["total_count"]).to eq(0)
+      expect(body["credits"]["total_settled"]).to eq(0)
     end
 
-    it "lista as compras de crédito pelo ciclo da fatura, não pelo mês-calendário" do
+    it "no crédito mostra o ciclo faturado no mês (o anterior), não o que se está gastando" do
+      # Agosto fatura o ciclo de julho do Nubank ([04/07..03/08]) → só a compra de 02/08
       make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id, month: 8, year: 2026 })
-      expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
+      expect(body["credits"]["data"].map { |transaction| transaction["id"] }).to match_array([transactions(:nubank_pre_fechamento).id])
+      expect(body["credits"]["total_settled"]).to eq(-12000)
 
+      # Setembro fatura o ciclo de agosto ([04/08..03/09]) → notebook (05/08) e curso (10/08)
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id, month: 9, year: 2026 })
+      body = JSON.parse(response.body)
       expect(body["accounts"]["data"]).to eq([])
-      # ciclo de agosto do Nubank (fecha dia 3) = [04/08..03/09]: notebook (05/08) e curso (10/08),
-      # mas NÃO a compra de 02/08 (essa está no ciclo de julho)
       expect(body["credits"]["data"].map { |transaction| transaction["id"] }).to match_array([transactions(:nubank_notebook).id, transactions(:nubank_curso).id])
       expect(body["credits"]["total_count"]).to eq(2)
       expect(body["credits"]["total_settled"]).to eq(-350000)
       expect(body["credits"]["total_projected"]).to eq(-350000)
     end
 
-    it "usa o ramo due_day < closing_day: ciclo fecha no próprio mês (casa_card fecha 25)" do
-      # Julho: ciclo [26/06..25/07] → só a compra de 20/07 (antes do fechamento)
-      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:casa).id, month: 7, year: 2026 })
+    it "usa o ramo due_day < closing_day no ciclo faturado (casa_card fecha 25)" do
+      # Agosto fatura o ciclo de julho ([26/06..25/07]) → só a compra de 20/07 (antes do fechamento)
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:casa).id, month: 8, year: 2026 })
       body = JSON.parse(response.body)
       expect(body["credits"]["data"].map { |t| t["id"] }).to match_array([transactions(:casa_card_before_closing).id])
       expect(body["credits"]["total_settled"]).to eq(-8000)
 
-      # Agosto: ciclo [26/07..25/08] → a compra de 28/07 (depois do fechamento) migrou pra cá
-      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:casa).id, month: 8, year: 2026 })
+      # Setembro fatura o ciclo de agosto ([26/07..25/08]) → a compra de 28/07 (depois do fechamento)
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:casa).id, month: 9, year: 2026 })
       body = JSON.parse(response.body)
       expect(body["credits"]["data"].map { |t| t["id"] }).to match_array([transactions(:casa_card_after_closing).id])
       expect(body["credits"]["total_settled"]).to eq(-5000)
@@ -121,6 +125,9 @@ RSpec.describe V1::TransactionsController, type: :request do
       expect(body["data"]["source_id"]).to eq(accounts(:gabriel_main_account).id)
       expect(body["data"]["wallet_id"]).to eq(wallets(:gabriel_main).id)
       expect(body["data"]["user_id"]).to eq(users(:gabriel).id)
+      # conta nasce pendente (settle é manual)
+      expect(body["data"]["settled"]).to eq(false)
+      expect(body["data"]["settled_at"]).to be_nil
     end
 
     it "cria uma transação num saldo de crédito apontando o cartão" do
@@ -131,6 +138,9 @@ RSpec.describe V1::TransactionsController, type: :request do
       expect(body["data"]["source_type"]).to eq("CreditBalance")
       expect(body["data"]["credit_card_id"]).to eq(credit_cards(:gabriel_nubank_fisico).id)
       expect(body["data"]["wallet_id"]).to eq(wallets(:gabriel_main).id)
+      # crédito nasce settled automaticamente, com settled_at = transaction_date
+      expect(body["data"]["settled"]).to eq(true)
+      expect(body["data"]["settled_at"]).to eq(body["data"]["transaction_date"])
     end
 
     it "rejeita cartão que não pertence ao saldo de crédito da origem" do

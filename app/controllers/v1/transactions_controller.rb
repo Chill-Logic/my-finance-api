@@ -77,7 +77,7 @@ class V1::TransactionsController < ApplicationController
   def credit_cycle_scope(scope, year, month)
     credit = scope.where(source_type: "CreditBalance")
     per_balance = @wallet.credit_balances.map do |credit_balance|
-      credit.where(source_id: credit_balance.id, transaction_date: credit_balance.cycle_for_month(year, month))
+      credit.where(source_id: credit_balance.id, transaction_date: credit_balance.billed_cycle_for_month(year, month))
     end
 
     per_balance.reduce(:or) || credit.none
