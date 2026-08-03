@@ -51,11 +51,14 @@ components:
         transaction_date:
           type: string
           format: date-time
+          description: Data nominal/vencimento da transação (quando ela deveria acontecer)
         settled_at:
           type: string
           format: date-time
           nullable: true
-          description: Efetivado em (recebido/pago). Nulo = pendente.
+          description: >
+            Efetivado em (recebido/pago). Nulo = pendente. É o que define o mês em que a
+            transação aparece na listagem; enquanto pendente, usa-se o transaction_date.
         draft:
           type: boolean
           description: Rascunho — quando true, é ignorada de todos os totais
@@ -98,6 +101,24 @@ components:
         updated_at:
           type: string
           format: date-time
+
+    TransactionGroup:
+      type: object
+      description: Visão de uma origem (Conta ou Cartões) — lista e totais próprios
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        total_count:
+          type: integer
+          description: Quantidade de transações do grupo no mês
+        total_settled:
+          type: integer
+          description: Saldo efetivado do grupo em centavos (só transações com settled_at)
+        total_projected:
+          type: integer
+          description: Saldo previsto do grupo em centavos (efetivadas + pendentes)
 
     TransactionInput:
       type: object
@@ -159,12 +180,24 @@ paths:
   /transactions:
     get:
       tags: [Transactions]
-      summary: Listar transações do mês de uma carteira
+      summary: Listar transações do mês de uma carteira (Conta e Cartões)
       description: >
-        Retorna as transações do mês de referência (ordenadas por data decrescente) e dois totais:
-        `total_settled` (só efetivadas) e `total_projected` (efetivadas + pendentes). Ambos ignoram
-        rascunhos (`draft`). O mês vem de `month`+`year` ou de `reference` ("YYYY-MM"); sem parâmetros,
-        usa o mês atual (fuso de Brasília). Rascunhos aparecem na lista, mas ficam fora dos totais.
+        Retorna as transações do mês de referência divididas em duas visões: `accounts` (origem
+        `Account`) e `credits` (origem `CreditBalance`). Cada visão traz sua própria lista `data`
+        (ordenada por data decrescente) e seus totais `total_settled` (só efetivadas) e
+        `total_projected` (efetivadas + pendentes) — ambos ignoram rascunhos (`draft`). Separar as
+        visões evita a dupla contagem do cartão (o pagamento da fatura conta só em `accounts` e as
+        compras só em `credits`). O mês vem de `month`+`year` ou de `reference` ("YYYY-MM"); sem
+        parâmetros, usa o mês atual (fuso de Brasília). As duas visões usam janelas diferentes: em
+        `accounts` o bucket é o mês-calendário, seguindo o `settled_at` quando a transação já foi
+        efetivada (aparece no mês em que foi paga/recebida) e o `transaction_date` (vencimento)
+        enquanto pendente; em `credits` o bucket é o **ciclo da fatura** de cada saldo de crédito
+        (de um fechamento ao próximo, por `transaction_date`), então cada cartão respeita seu próprio
+        dia de fechamento. A janela do ciclo depende de `due_day` vs `closing_day`: quando
+        `due_day < closing_day` (fatura vence no mês seguinte ao fechamento) o ciclo do mês M fecha no
+        próprio M (`[fechamento(M-1)+1 .. fechamento(M)]`); caso contrário fecha no mês seguinte
+        (`[fechamento(M)+1 .. fechamento(M+1)]`). É o mesmo ciclo usado por
+        `GET /credit_balances/{id}/invoice`. Rascunhos aparecem na lista, mas ficam fora dos totais.
       parameters:
         - name: wallet_id
           in: query
@@ -214,25 +247,16 @@ paths:
           description: Busca textual por descrição (insensível a acentos)
       responses:
         "200":
-          description: Lista completa das transações do mês (sem paginação) com os totais efetivado e previsto
+          description: Transações do mês (sem paginação) separadas em Conta e Cartões, cada uma com seus totais
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Transaction"
-                  total_count:
-                    type: integer
-                    description: Quantidade de transações do mês
-                  total_settled:
-                    type: integer
-                    description: Saldo efetivado do mês em centavos (só transações com settled_at)
-                  total_projected:
-                    type: integer
-                    description: Saldo previsto do mês em centavos (efetivadas + pendentes)
+                  accounts:
+                    $ref: "#/components/schemas/TransactionGroup"
+                  credits:
+                    $ref: "#/components/schemas/TransactionGroup"
         "422":
           description: Carteira não encontrada (não enviada, inexistente ou sem acesso)
           content:

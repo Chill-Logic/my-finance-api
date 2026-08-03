@@ -6,34 +6,78 @@ RSpec.describe V1::TransactionsController, type: :request do
   include RequestHelper
 
   describe "GET #index" do
-    it "retorna as transações do mês com os totais efetivado e previsto" do
+    it "separa Conta e Cartões em listas e totais próprios" do
       make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id, month: 7, year: 2026 })
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
-      expect(body["data"].map { |transaction| transaction["id"] }).to match_array([transactions(:salary).id, transactions(:market).id, transactions(:pending_bill).id, transactions(:draft_plan).id])
+
+      # Conta: salário, mercado, pendente e rascunho
+      expect(body["accounts"]["data"].map { |transaction| transaction["id"] }).to match_array([transactions(:salary).id, transactions(:market).id, transactions(:pending_bill).id, transactions(:draft_plan).id])
+      expect(body["accounts"]["total_count"]).to eq(4)
       # 500000 (salário) - 35000 (mercado); pendente e rascunho fora do efetivado
-      expect(body["total_settled"]).to eq(465000)
+      expect(body["accounts"]["total_settled"]).to eq(465000)
       # inclui a pendente (-20000); rascunho continua fora
-      expect(body["total_projected"]).to eq(445000)
-      expect(body["total_count"]).to eq(4)
-      expect(body).not_to have_key("total_pages")
+      expect(body["accounts"]["total_projected"]).to eq(445000)
+
+      # Cartões: só a compra pré-fechamento (02/08 cai no ciclo de julho do Nubank)
+      expect(body["credits"]["data"].map { |transaction| transaction["id"] }).to match_array([transactions(:nubank_pre_fechamento).id])
+      expect(body["credits"]["total_count"]).to eq(1)
+      expect(body["credits"]["total_settled"]).to eq(-12000)
+    end
+
+    it "lista as compras de crédito pelo ciclo da fatura, não pelo mês-calendário" do
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id, month: 8, year: 2026 })
+      expect(response).to have_http_status(:ok)
+      body = JSON.parse(response.body)
+
+      expect(body["accounts"]["data"]).to eq([])
+      # ciclo de agosto do Nubank (fecha dia 3) = [04/08..03/09]: notebook (05/08) e curso (10/08),
+      # mas NÃO a compra de 02/08 (essa está no ciclo de julho)
+      expect(body["credits"]["data"].map { |transaction| transaction["id"] }).to match_array([transactions(:nubank_notebook).id, transactions(:nubank_curso).id])
+      expect(body["credits"]["total_count"]).to eq(2)
+      expect(body["credits"]["total_settled"]).to eq(-350000)
+      expect(body["credits"]["total_projected"]).to eq(-350000)
+    end
+
+    it "usa o ramo due_day < closing_day: ciclo fecha no próprio mês (casa_card fecha 25)" do
+      # Julho: ciclo [26/06..25/07] → só a compra de 20/07 (antes do fechamento)
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:casa).id, month: 7, year: 2026 })
+      body = JSON.parse(response.body)
+      expect(body["credits"]["data"].map { |t| t["id"] }).to match_array([transactions(:casa_card_before_closing).id])
+      expect(body["credits"]["total_settled"]).to eq(-8000)
+
+      # Agosto: ciclo [26/07..25/08] → a compra de 28/07 (depois do fechamento) migrou pra cá
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:casa).id, month: 8, year: 2026 })
+      body = JSON.parse(response.body)
+      expect(body["credits"]["data"].map { |t| t["id"] }).to match_array([transactions(:casa_card_after_closing).id])
+      expect(body["credits"]["total_settled"]).to eq(-5000)
+    end
+
+    it "bucketiza pelo settled_at: transação paga adiantada cai no mês do pagamento" do
+      # early_paid_bill vence em out/2026 mas foi paga em mai/2026 (carteira casa)
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:casa).id, month: 5, year: 2026 })
+      expect(JSON.parse(response.body)["accounts"]["data"].map { |t| t["id"] }).to include(transactions(:early_paid_bill).id)
+
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:casa).id, month: 10, year: 2026 })
+      expect(JSON.parse(response.body)["accounts"]["data"].map { |t| t["id"] }).not_to include(transactions(:early_paid_bill).id)
     end
 
     it "aceita o parâmetro reference no formato YYYY-MM" do
       make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id, reference: "2026-06" })
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
-      expect(body["data"].map { |transaction| transaction["id"] }).to match_array([transactions(:old_deposit).id])
-      expect(body["total_settled"]).to eq(10000)
-      expect(body["total_projected"]).to eq(10000)
+      expect(body["accounts"]["data"].map { |transaction| transaction["id"] }).to match_array([transactions(:old_deposit).id])
+      expect(body["accounts"]["total_settled"]).to eq(10000)
+      expect(body["accounts"]["total_projected"]).to eq(10000)
     end
 
     it "filtra por origem quando source_type/source_id são enviados" do
       make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id, month: 7, year: 2026, source_type: "Account", source_id: accounts(:gabriel_main_account).id })
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
-      expect(body["data"].length).to eq(4)
-      expect(body["total_settled"]).to eq(465000)
+      expect(body["accounts"]["data"].length).to eq(4)
+      expect(body["accounts"]["total_settled"]).to eq(465000)
+      expect(body["credits"]["data"]).to eq([])
     end
 
     it "retorna erro se o usuário não tem acesso à carteira" do

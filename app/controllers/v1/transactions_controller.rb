@@ -5,18 +5,12 @@ class V1::TransactionsController < ApplicationController
 
   def index
     year, month = resolve_month
-    @transactions = filter_by_source(@wallet.transactions.for_month(year, month))
+    scope = filter_by_source(@wallet.transactions)
+    scope = search_bar(scope, params[:terms], ["transactions.description"])
 
-    total_settled = @transactions.balance(:effective)
-    total_projected = @transactions.balance(:projected)
-
-    @transactions = search_bar(@transactions, params[:terms], ["transactions.description"])
-    @transactions = @transactions.order(transaction_date: :desc, created_at: :desc)
     render json: {
-      data: @transactions,
-      total_count: @transactions.count,
-      total_settled: total_settled,
-      total_projected: total_projected
+      accounts: transaction_group(scope.where(source_type: "Account").for_month(year, month)),
+      credits: transaction_group(credit_cycle_scope(scope, year, month))
     }, status: :ok
   end
 
@@ -78,6 +72,26 @@ class V1::TransactionsController < ApplicationController
     return scope unless params[:source_type].present? && params[:source_id].present?
 
     scope.where(source_type: params[:source_type], source_id: params[:source_id])
+  end
+
+  def credit_cycle_scope(scope, year, month)
+    credit = scope.where(source_type: "CreditBalance")
+    per_balance = @wallet.credit_balances.map do |credit_balance|
+      credit.where(source_id: credit_balance.id, transaction_date: credit_balance.cycle_for_month(year, month))
+    end
+
+    per_balance.reduce(:or) || credit.none
+  end
+
+  def transaction_group(scope)
+    records = scope.order(transaction_date: :desc, created_at: :desc)
+
+    {
+      data: records,
+      total_count: records.count,
+      total_settled: records.balance(:effective),
+      total_projected: records.balance(:projected)
+    }
   end
 
   def set_source

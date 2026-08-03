@@ -81,8 +81,34 @@ RSpec.describe V1::CreditBalancesController, type: :request do
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body["data"]["amount"]).to eq(350000)
+      expect(body["data"]["paid_amount"]).to eq(0)
+      expect(body["data"]["remaining"]).to eq(350000)
       expect(body["data"]["due_date"]).to eq("2026-09-10")
       expect(body["data"]["paid"]).to eq(false)
+    end
+
+    it "aceita reference YYYY-MM e usa o mesmo ciclo do index" do
+      # Nubank (fecha 3, vence 10): agosto = [04/08..03/09] = notebook + curso, igual ao index
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get, params: { reference: "2026-08" })
+      body = JSON.parse(response.body)
+      expect(body["data"]["amount"]).to eq(350000)
+      expect(body["data"]["due_date"]).to eq("2026-09-10")
+
+      # Julho = [04/07..03/08] = só a compra pré-fechamento (02/08)
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get, params: { reference: "2026-07" })
+      expect(JSON.parse(response.body)["data"]["amount"]).to eq(12000)
+    end
+
+    it "respeita due_day < closing_day na fatura por mês (casa_card)" do
+      # casa_card fecha 25, vence 5: julho fecha no próprio mês → compra de 20/07
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:casa_card).id}/invoice", token: user_token, method: :get, params: { reference: "2026-07" })
+      body = JSON.parse(response.body)
+      expect(body["data"]["amount"]).to eq(8000)
+      expect(body["data"]["due_date"]).to eq("2026-08-05")
+
+      # agosto → compra de 28/07 (pós-fechamento)
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:casa_card).id}/invoice", token: user_token, method: :get, params: { reference: "2026-08" })
+      expect(JSON.parse(response.body)["data"]["amount"]).to eq(5000)
     end
   end
 
@@ -105,14 +131,84 @@ RSpec.describe V1::CreditBalancesController, type: :request do
     it "marca a fatura como paga após o pagamento" do
       make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, date: "2026-08-15" })
       make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get, params: { date: "2026-08-15" })
+      body = JSON.parse(response.body)
+      expect(body["data"]["paid"]).to eq(true)
+      expect(body["data"]["paid_amount"]).to eq(350000)
+      expect(body["data"]["remaining"]).to eq(0)
+    end
+
+    it "aparece no mês em que foi pago (settled_at), não no do vencimento" do
+      # Ciclo de agosto fecha em 03/09 e vence em 10/09; pago (settled) em 15/08.
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, date: "2026-08-15", settled_at: "2026-08-15T10:00:00" })
+      expect(response).to have_http_status(:created)
+      body = JSON.parse(response.body)
+      # transaction_date fica no vencimento; settled_at na data do pagamento
+      expect(body["data"]["transaction_date"]).to start_with("2026-09")
+      expect(body["data"]["settled_at"]).to start_with("2026-08")
+      payment_id = body["data"]["id"]
+
+      # Aparece no index de agosto (mês do settled_at)...
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id, month: 8, year: 2026 })
+      expect(JSON.parse(response.body)["accounts"]["data"].map { |t| t["id"] }).to include(payment_id)
+
+      # ...e não no de setembro (mês do vencimento).
+      make_request(endpoint: v1_transactions_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id, month: 9, year: 2026 })
+      expect(JSON.parse(response.body)["accounts"]["data"].map { |t| t["id"] }).not_to include(payment_id)
+    end
+
+    it "lança um pagamento parcial e reflete o valor pago e o saldo restante" do
+      expect {
+        make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, date: "2026-08-15", value: 100000 })
+      }.to change { accounts(:gabriel_main_account).reload.balance }.by(-100000)
+      expect(response).to have_http_status(:created)
+      expect(JSON.parse(response.body)["data"]["value"]).to eq(100000)
+
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get, params: { date: "2026-08-15" })
+      body = JSON.parse(response.body)
+      expect(body["data"]["paid_amount"]).to eq(100000)
+      expect(body["data"]["remaining"]).to eq(250000)
+      expect(body["data"]["paid"]).to eq(false)
+    end
+
+    it "soma pagamentos parciais até quitar a fatura" do
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, date: "2026-08-15", value: 200000 })
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, date: "2026-08-15" })
+      expect(response).to have_http_status(:created)
+      # segundo pagamento cobre o restante (150000)
+      expect(JSON.parse(response.body)["data"]["value"]).to eq(150000)
+
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get, params: { date: "2026-08-15" })
       expect(JSON.parse(response.body)["data"]["paid"]).to eq(true)
     end
 
-    it "recusa segundo pagamento da mesma fatura" do
+    it "permite pagar acima do saldo restante da fatura (paga a mais)" do
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, date: "2026-08-15", value: 400000 })
+      expect(response).to have_http_status(:created)
+      expect(JSON.parse(response.body)["data"]["value"]).to eq(400000)
+
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get, params: { date: "2026-08-15" })
+      body = JSON.parse(response.body)
+      expect(body["data"]["paid_amount"]).to eq(400000)
+      expect(body["data"]["remaining"]).to eq(0)
+      expect(body["data"]["paid"]).to eq(true)
+    end
+
+    it "permite pagar a mesma fatura novamente informando um valor" do
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, date: "2026-08-15" })
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, date: "2026-08-15", value: 50000 })
+      expect(response).to have_http_status(:created)
+      expect(JSON.parse(response.body)["data"]["value"]).to eq(50000)
+
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get, params: { date: "2026-08-15" })
+      # 350000 (primeiro, quitando) + 50000 (segundo) = 400000 pagos
+      expect(JSON.parse(response.body)["data"]["paid_amount"]).to eq(400000)
+    end
+
+    it "exige um valor explícito ao pagar de novo uma fatura já quitada" do
       make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, date: "2026-08-15" })
       make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, date: "2026-08-15" })
       expect(response).to have_http_status(:unprocessable_content)
-      expect(JSON.parse(response.body)["message"]).to eq("Fatura já foi paga.")
+      expect(JSON.parse(response.body)["message"]).to eq("Informe um valor de pagamento maior que zero.")
     end
 
     it "recusa quando a conta pagadora não é acessível" do

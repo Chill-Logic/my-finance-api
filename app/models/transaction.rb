@@ -5,7 +5,7 @@ class Transaction < ApplicationRecord
 
   scope :for_month, ->(year, month) {
     ref = Time.zone.local(year.to_i, month.to_i, 1)
-    where(transaction_date: ref.beginning_of_month..ref.end_of_month)
+    where("COALESCE(transactions.settled_at, transactions.transaction_date) BETWEEN ? AND ?", ref.beginning_of_month, ref.end_of_month)
   }
   scope :settled, -> { where.not(settled_at: nil) }
   scope :pending, -> { where(settled_at: nil) }

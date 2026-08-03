@@ -11,3 +11,12 @@ shared_credit:
   closing_day: 5
   due_day: 15
   wallet: shared
+
+# Vencimento antes do fechamento (due_day 5 < closing_day 25): a fatura vence no
+# mês seguinte ao fechamento, então o ciclo do mês M fecha no próprio mês M.
+casa_card:
+  name: Cartão da casa
+  credit_limit: 300000
+  closing_day: 25
+  due_day: 5
+  wallet: casa

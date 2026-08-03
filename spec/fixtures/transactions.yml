@@ -41,6 +41,18 @@ pending_bill:
   source: gabriel_main_account (Account)
   user: gabriel
 
+# Vencimento em outubro, mas pago (settled) em maio — deve aparecer no mês do
+# pagamento (maio), não no do vencimento (outubro). Vale pra qualquer transação.
+early_paid_bill:
+  description: IPVA adiantado
+  value: 40000
+  kind: withdraw
+  transaction_date: <%= Time.zone.parse("2026-10-15").utc.to_fs(:db) %>
+  settled_at: <%= Time.zone.parse("2026-05-10").utc.to_fs(:db) %>
+  wallet: casa
+  source: casa_account (Account)
+  user: gabriel
+
 # Julho: rascunho — aparece na lista, mas é ignorado de ambos os totais.
 draft_plan:
   description: Planejamento
@@ -73,4 +85,39 @@ nubank_curso:
   wallet: gabriel_main
   source: gabriel_nubank (CreditBalance)
   credit_card: gabriel_nubank_virtual
+  user: gabriel
+
+# Nubank fecha dia 3: compra em 02/08 cai no ciclo [04/07..03/08] (mês julho),
+# não no ciclo de agosto — prova que o cartão segue o ciclo, não o mês-calendário.
+nubank_pre_fechamento:
+  description: Livro
+  value: 12000
+  kind: withdraw
+  transaction_date: <%= Time.zone.parse("2026-08-02").utc.to_fs(:db) %>
+  settled_at: <%= Time.zone.parse("2026-08-02").utc.to_fs(:db) %>
+  wallet: gabriel_main
+  source: gabriel_nubank (CreditBalance)
+  credit_card: gabriel_nubank_fisico
+  user: gabriel
+
+# casa_card fecha 25, vence 5 (due < closing). Ciclo do mês M = [26/(M-1)..25/M].
+# Compra 20/07 (antes do fechamento) fica em julho; 28/07 (depois) vai pra agosto.
+casa_card_before_closing:
+  description: Compra pré-fechamento
+  value: 8000
+  kind: withdraw
+  transaction_date: <%= Time.zone.parse("2026-07-20").utc.to_fs(:db) %>
+  settled_at: <%= Time.zone.parse("2026-07-20").utc.to_fs(:db) %>
+  wallet: casa
+  source: casa_card (CreditBalance)
+  user: gabriel
+
+casa_card_after_closing:
+  description: Compra pós-fechamento
+  value: 5000
+  kind: withdraw
+  transaction_date: <%= Time.zone.parse("2026-07-28").utc.to_fs(:db) %>
+  settled_at: <%= Time.zone.parse("2026-07-28").utc.to_fs(:db) %>
+  wallet: casa
+  source: casa_card (CreditBalance)
   user: gabriel

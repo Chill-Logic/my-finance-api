@@ -34,20 +34,22 @@ class V1::CreditBalancesController < ApplicationController
   end
 
   def invoice
-    render json: { data: @credit_balance.current_invoice(invoice_reference) }, status: :ok
+    render json: { data: resolved_invoice }, status: :ok
   end
 
   def pay_invoice
     account = Account.accessible_by(@current_user).find_by(id: params[:account_id])
     return render json: { message: 'Conta pagadora não encontrada.' }, status: :unprocessable_content if account.nil?
 
-    invoice = @credit_balance.current_invoice(invoice_reference)
-    return render json: { message: 'Fatura já foi paga.' }, status: :unprocessable_content if invoice[:paid]
+    invoice = resolved_invoice
     return render json: { message: 'Não há fatura em aberto para pagar.' }, status: :unprocessable_content if invoice[:amount] <= 0
+
+    value = params[:value].presence&.to_i || invoice[:remaining]
+    return render json: { message: 'Informe um valor de pagamento maior que zero.' }, status: :unprocessable_content if value <= 0
 
     payment = Transaction.new(
       description: params[:description].presence || "Fatura #{@credit_balance.name}",
-      value: invoice[:amount],
+      value: value,
       kind: "withdraw",
       transaction_date: invoice[:due_date],
       settled_at: params[:settled_at].presence || Time.current,
@@ -62,6 +64,23 @@ class V1::CreditBalancesController < ApplicationController
   end
 
   private
+
+  def resolved_invoice
+    year, month = month_reference
+    return @credit_balance.invoice_for_month(year, month) if year && month
+
+    @credit_balance.current_invoice(invoice_reference)
+  end
+
+  def month_reference
+    if params[:reference].present? && (match = params[:reference].match(/\A(\d{4})-(\d{1,2})\z/))
+      return [match[1].to_i, match[2].to_i]
+    end
+
+    return [params[:year].to_i, params[:month].to_i] if params[:year].present? && params[:month].present?
+
+    nil
+  end
 
   def invoice_reference
     params[:date].present? ? Date.parse(params[:date]) : Time.zone.today
