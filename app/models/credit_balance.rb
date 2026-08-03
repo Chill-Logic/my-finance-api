@@ -58,7 +58,7 @@ class CreditBalance < ApplicationRecord
 
   def current_invoice(reference = Time.zone.today)
     ref = reference.to_date
-    fallback = invoice_for_month(ref.year, ref.month)
+    fallback = invoice_for_range(cycle_for_month(ref.year, ref.month))
     earliest = transactions.not_draft.minimum(:transaction_date)
     return fallback if earliest.nil?
 
