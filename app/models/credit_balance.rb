@@ -58,7 +58,20 @@ class CreditBalance < ApplicationRecord
 
   def current_invoice(reference = Time.zone.today)
     ref = reference.to_date
-    invoice_for_month(ref.year, ref.month)
+    fallback = invoice_for_month(ref.year, ref.month)
+    earliest = transactions.not_draft.minimum(:transaction_date)
+    return fallback if earliest.nil?
+
+    month = earliest.to_date.beginning_of_month
+    last = ref.beginning_of_month
+    while month <= last
+      invoice = invoice_for_month(month.year, month.month)
+      return invoice if invoice[:amount].positive? && invoice[:remaining].positive?
+
+      month = month.next_month
+    end
+
+    fallback
   end
 
   def invoice_on(reference = Time.zone.today)

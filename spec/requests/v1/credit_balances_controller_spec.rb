@@ -32,12 +32,26 @@ RSpec.describe V1::CreditBalancesController, type: :request do
       expect(JSON.parse(response.body)["data"]["id"]).to eq(credit_balances(:gabriel_nubank).id)
     end
 
-    it "current_invoice mostra o ciclo já fechado (a fatura a pagar), não o ciclo aberto" do
-      # Em 15/09 o ciclo aberto do Nubank é [04/09..03/10] (vazio); a fatura a pagar
-      # é a que fechou 03/09 (compras de agosto), vence 10/09.
-      travel_to(Time.zone.local(2026, 9, 15)) do
+    it "current_invoice retorna a fatura em aberto com vencimento mais antigo" do
+      # Em out/2026 o Nubank tem duas faturas em aberto: a de julho (vence 10/08, 12000) e a de
+      # agosto (vence 10/09, 350000). A mais antiga não paga é a de 10/08.
+      travel_to(Time.zone.local(2026, 10, 15)) do
         make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}", token: user_token, method: :get)
         invoice = JSON.parse(response.body)["data"]["current_invoice"]
+        expect(invoice["amount"]).to eq(12000)
+        expect(invoice["due_date"]).to eq("2026-08-10")
+      end
+    end
+
+    it "avança para a próxima fatura em aberto quando a mais antiga é paga" do
+      travel_to(Time.zone.local(2026, 10, 15)) do
+        # paga a fatura mais antiga (faturada em ago → ciclo de julho, vence 10/08)
+        make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, reference: "2026-08" })
+        expect(response).to have_http_status(:created)
+
+        # agora a mais antiga em aberto é a de agosto (vence 10/09)
+        make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/invoice", token: user_token, method: :get)
+        invoice = JSON.parse(response.body)["data"]
         expect(invoice["amount"]).to eq(350000)
         expect(invoice["due_date"]).to eq("2026-09-10")
       end

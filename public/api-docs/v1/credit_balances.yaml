@@ -85,8 +85,8 @@ components:
           allOf:
             - $ref: "#/components/schemas/Invoice"
           description: >
-            Fatura a pagar — o último ciclo já fechado (referente ao período anterior), não o ciclo
-            aberto em que ainda se gasta. Já `used`/`available` refletem o ciclo aberto atual.
+            Fatura a pagar — a fatura em aberto (não quitada) com vencimento mais antigo. Se todas
+            estiverem pagas, cai na faturada no mês atual. Já `used`/`available` refletem o ciclo aberto atual.
         wallet_id:
           type: string
           format: uuid
@@ -359,8 +359,9 @@ paths:
         `month`+`year`) — nesse caso retorna a fatura **faturada naquele mês**, ou seja, o **ciclo
         anterior** (o que se paga no mês), exatamente o mesmo que aparece na aba Cartões do index de
         transactions — ou **por data** (`date`, o ciclo de gasto que contém aquele dia, sem deslocamento).
-        Sem nenhum parâmetro, retorna a fatura a pagar do mês atual (o mesmo que o `current_invoice` do
-        saldo de crédito) — nunca o ciclo aberto em que você ainda gasta.
+        Sem nenhum parâmetro, retorna a **fatura em aberto com vencimento mais antigo** (a que se paga
+        primeiro) — o mesmo que o `current_invoice` do saldo de crédito. Se não houver nenhuma em aberto,
+        cai na fatura faturada no mês atual.
       parameters:
         - name: id
           in: path
