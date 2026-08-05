@@ -16,6 +16,6 @@ class UserWallet < ApplicationRecord
   private
 
   def reset_main_reference_for_users
-    User.where(main_user_wallet_id: id).find_each(&:reset_main_user_wallet!)
+    User.where(main_user_wallet_id: self.id).find_each(&:reset_main_user_wallet!)
   end
 end

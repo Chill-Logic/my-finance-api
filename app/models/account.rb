@@ -15,6 +15,6 @@ class Account < ApplicationRecord
   validates :name, presence: true
 
   def balance(mode = :effective)
-    initial_balance.to_i + transactions.balance(mode)
+    self.initial_balance.to_i + self.transactions.balance(mode)
   end
 end

@@ -18,6 +18,25 @@ RSpec.describe V1::CreditBalancesController, type: :request do
       expect(credit_balance["current_invoice"]).to have_key("due_date")
     end
 
+    it "used soma todas as compras não-rascunho em aberto, incluindo ciclos anteriores e futuras" do
+      # Nubank: pré-fechamento 12000 (jul) + notebook 300000 + curso 50000 (ago) + parcela futura 100000 (dez) = 462000.
+      make_request(endpoint: v1_credit_balances_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id })
+      credit_balance = JSON.parse(response.body)["data"].first
+      expect(credit_balance["used"]).to eq(462000)
+      expect(credit_balance["available"]).to eq(1000000 - 462000)
+    end
+
+    it "pagamento efetivado libera limite de volta no used" do
+      make_request(endpoint: v1_credit_balances_path + "/#{credit_balances(:gabriel_nubank).id}/pay_invoice", token: user_token, method: :post, params: { account_id: accounts(:gabriel_main_account).id, reference: "2026-08" })
+      expect(response).to have_http_status(:created)
+
+      make_request(endpoint: v1_credit_balances_path, token: user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id })
+      credit_balance = JSON.parse(response.body)["data"].first
+      # fatura de julho (12000) quitada → sobra 450000 em aberto
+      expect(credit_balance["used"]).to eq(450000)
+      expect(credit_balance["available"]).to eq(1000000 - 450000)
+    end
+
     it "retorna erro se o usuário não tem acesso à carteira" do
       make_request(endpoint: v1_credit_balances_path, token: second_user_token, method: :get, params: { wallet_id: wallets(:gabriel_main).id })
       expect(response).to have_http_status(:unprocessable_content)

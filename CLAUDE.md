@@ -139,6 +139,7 @@ bundle exec rspec
 - Código em inglês (nomes de classes, métodos, variáveis, migrations, commits).
 - Mensagens de erro voltadas ao usuário podem ficar em pt-BR.
 - **Não comentar no meio do código** (dentro de método/bloco explicando o que a linha faz). O código deve ser autoexplicativo; se algo precisa de contexto, o nome do método/variável resolve. Comentários existentes em fixtures são exceção tolerada.
+- **`self` explícito nos models**: dentro dos arquivos em `app/models/`, toda chamada a método ou atributo da própria instância deve ser prefixada com `self.` (ex.: `self.credit_limit.to_i - self.used`, `self.transactions.not_draft`). Aplica-se só aos models — controllers, serializers, helpers e `lib/` seguem o idiomático Rails (sem `self.` em `render`/`params`/macros de DSL). Setters já exigem `self.` normalmente.
 
 ### Controllers
 

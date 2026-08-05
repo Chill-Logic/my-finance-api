@@ -22,12 +22,12 @@ class Wallet < ApplicationRecord
   after_create :create_owner_user_wallet
 
   def total(mode = :effective)
-    accounts.sum { |account| account.balance(mode) }
+    self.accounts.sum { |account| account.balance(mode) }
   end
 
   private
 
   def create_owner_user_wallet
-    user_wallets.create!(user: owner, accepted: true)
+    self.user_wallets.create!(user: self.owner, accepted: true)
   end
 end

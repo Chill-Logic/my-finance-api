@@ -100,6 +100,19 @@ nubank_pre_fechamento:
   credit_card: gabriel_nubank_fisico
   user: gabriel
 
+# Parcela futura no crédito (Nubank): compra agendada pra dez/2026. Já consome
+# limite hoje (entra no `used`), mesmo com transaction_date no futuro.
+nubank_future_installment:
+  description: Parcela futura
+  value: 100000
+  kind: withdraw
+  transaction_date: <%= Time.zone.parse("2026-12-05").utc.to_fs(:db) %>
+  settled_at: <%= Time.zone.parse("2026-12-05").utc.to_fs(:db) %>
+  wallet: gabriel_main
+  source: gabriel_nubank (CreditBalance)
+  credit_card: gabriel_nubank_fisico
+  user: gabriel
+
 # casa_card fecha 25, vence 5 (due < closing). Ciclo do mês M = [26/(M-1)..25/M].
 # Compra 20/07 (antes do fechamento) fica em julho; 28/07 (depois) vai pra agosto.
 casa_card_before_closing:

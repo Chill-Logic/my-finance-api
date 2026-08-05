@@ -22,16 +22,16 @@ class User < ApplicationRecord
   end
 
   def reset_main_user_wallet!
-    fallback = user_wallets.accepted.joins(:wallet).where(wallets: { owner_id: id }).order("wallets.created_at").first ||
-               user_wallets.accepted.order(:created_at).first
+    fallback = self.user_wallets.accepted.joins(:wallet).where(wallets: { owner_id: self.id }).order("wallets.created_at").first ||
+               self.user_wallets.accepted.order(:created_at).first
 
-    update_column(:main_user_wallet_id, fallback&.id)
+    self.update_column(:main_user_wallet_id, fallback&.id)
   end
 
   private
 
   def create_default_wallet
     wallet = Wallet.create!(name: "Minha Carteira", owner: self)
-    update_column(:main_user_wallet_id, wallet.user_wallets.find_by(user: self).id)
+    self.update_column(:main_user_wallet_id, wallet.user_wallets.find_by(user: self).id)
   end
 end

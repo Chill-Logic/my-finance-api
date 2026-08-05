@@ -29,30 +29,30 @@ class Transaction < ApplicationRecord
   validate :credit_card_matches_source
 
   def self.balance(mode = :effective)
-    scope = not_draft
+    scope = self.not_draft
     scope = scope.settled if mode == :effective
     scope.deposit.sum(:value) - scope.withdraw.sum(:value)
   end
 
   def settled?
-    settled_at.present?
+    self.settled_at.present?
   end
 
   private
 
   def assign_wallet_from_source
-    self.wallet_id = source.wallet_id if source.present?
+    self.wallet_id = self.source.wallet_id if self.source.present?
   end
 
   def settle_credit_source
-    self.settled_at = transaction_date if source_type == "CreditBalance"
+    self.settled_at = self.transaction_date if self.source_type == "CreditBalance"
   end
 
   def credit_card_matches_source
-    return if credit_card_id.blank?
+    return if self.credit_card_id.blank?
 
-    unless source.is_a?(CreditBalance) && credit_card&.credit_balance_id == source_id
-      errors.add(:credit_card, :invalid)
+    unless self.source.is_a?(CreditBalance) && self.credit_card&.credit_balance_id == self.source_id
+      self.errors.add(:credit_card, :invalid)
     end
   end
 end

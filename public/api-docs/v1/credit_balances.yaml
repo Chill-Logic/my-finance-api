@@ -77,7 +77,9 @@ components:
           example: 10
         used:
           type: integer
-          description: Valor usado no ciclo atual, em centavos
+          description: >
+            Limite consumido — saldo devedor rotativo: soma de todas as compras não-rascunho em aberto
+            (inclusive de ciclos anteriores ainda não quitados) menos os pagamentos efetivados, em centavos.
         available:
           type: integer
           description: Limite disponível (credit_limit - used), em centavos
@@ -86,7 +88,7 @@ components:
             - $ref: "#/components/schemas/Invoice"
           description: >
             Fatura a pagar — a fatura em aberto (não quitada) com vencimento mais antigo. Se todas
-            estiverem pagas, cai na faturada no mês atual. Já `used`/`available` refletem o ciclo aberto atual.
+            estiverem pagas, cai na faturada no mês atual. Já `used`/`available` refletem o saldo devedor total em aberto.
         wallet_id:
           type: string
           format: uuid
